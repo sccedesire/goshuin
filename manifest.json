@@ -1,0 +1,42 @@
+{
+  "name": "御朱印帳",
+  "short_name": "御朱印帳",
+  "description": "御朱印の収集・管理アプリ",
+  "start_url": "./goshuin.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f0e8",
+  "theme_color": "#c0392b",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "travel", "utilities"],
+  "shortcuts": [
+    {
+      "name": "御朱印を追加",
+      "short_name": "追加",
+      "url": "./goshuin.html",
+      "icons": [{"src": "icon-192.png", "sizes": "192x192"}]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}

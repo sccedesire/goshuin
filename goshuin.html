@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>御朱印帳 — Goshuin</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c0392b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="御朱印帳">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="御朱印の収集・管理アプリ">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<!-- Apple Splash Screens -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  @media (prefers-color-scheme: dark) {
+    meta[name="theme-color"] { content: "#1a1712"; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500;600&family=Shippori+Mincho:wght@400;500;600&family=Noto+Sans+JP:wght@300;400&family=Noto+Sans+TC:wght@300;400&family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --washi: #f5f0e8;
+    --washi-dark: #ede6d6;
+    --ink: #1a1510;
+    --ink-light: #4a4035;
+    --ink-faint: #8a7d6e;
+    --vermilion: #c0392b;
+    --vermilion-pale: #f5e6e4;
+    --gold: #b8962e;
+    --gold-pale: #f5f0dc;
+    --border: #d4c9b0;
+    --shadow: rgba(26,21,16,0.08);
+    --bg-card: #ffffff;
+  }
+  .dark {
+    --washi: #1a1712;
+    --washi-dark: #242018;
+    --ink: #f0ebe0;
+    --ink-light: #c8bfaa;
+    --ink-faint: #8a7d6e;
+    --vermilion: #d94f3d;
+    --vermilion-pale: #2e1a17;
+    --gold: #c9a84c;
+    --gold-pale: #2a2210;
+    --border: #3a342a;
+    --shadow: rgba(0,0,0,0.3);
+    --bg-card: #242018;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--washi); font-family: 'Noto Sans JP', sans-serif; color: var(--ink); min-height: 100vh; overflow-x: hidden; transition: background .3s, color .3s; }
+  body.lang-zh { font-family: 'Noto Sans TC', sans-serif; }
+  body.lang-en { font-family: sans-serif; }
+  body.lang-ko { font-family: 'Noto Sans KR', sans-serif; }
+  .app-shell { max-width: 390px; margin: 0 auto; min-height: 100vh; background: var(--washi); position: relative; }
+  .page { display: none; min-height: 100vh; flex-direction: column; animation: fadeIn .3s ease; }
+  .page.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .status-bar { height: 44px; display: flex; align-items: center; padding: 0 20px; justify-content: space-between; font-size: 12px; color: var(--ink-faint); letter-spacing: .04em; }
+  .divider { height: 1px; background: linear-gradient(to right, transparent, var(--border) 20%, var(--border) 80%, transparent); margin: 0 20px; }
+  .scroll-area { flex: 1; overflow-y: auto; padding-bottom: 80px; -webkit-overflow-scrolling: touch; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Hero */
+  #page-home .hero { padding: 28px 20px 20px; display: flex; align-items: center; gap: 14px; }
+  .hero-seal { width: 56px; height: 56px; border-radius: 50%; background: var(--vermilion); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 12px rgba(192,57,43,.3); overflow: hidden; cursor: pointer; position: relative; }
+  .hero-seal span { font-family: 'Shippori Mincho', serif; font-size: 22px; color: #fff; }
+  .hero-seal img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .hero-seal-edit { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: center; justify-content: center; color: #fff; font-size: 18px; }
+  .hero-seal:hover .hero-seal-edit { display: flex; }
+  .hero-text .app-name { font-family: 'Shippori Mincho', serif; font-size: 22px; font-weight: 500; color: var(--ink); letter-spacing: .08em; }
+  .hero-text .app-sub { font-size: 11px; color: var(--ink-faint); letter-spacing: .14em; margin-top: 3px; }
+  .stats-row { display: flex; margin: 4px 20px 20px; gap: 8px; }
+  .stat-card { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 8px; text-align: center; min-width: 0; }
+  .stat-card .stat-num { font-family: 'Shippori Mincho', serif; font-size: 26px; font-weight: 500; color: var(--vermilion); line-height: 1; }
+  .stat-card .stat-label { font-size: 9px; color: var(--ink-faint); margin-top: 5px; letter-spacing: .06em; }
+  /* ── 統計パネル ── */
+  .stats-panel { margin: 0 20px 4px; display: flex; flex-direction: column; gap: 10px; }
+  .stats-panel-row { display: flex; gap: 10px; }
+  .mini-stat { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .mini-stat-num { font-family: 'Shippori Mincho', serif; font-size: 22px; font-weight: 500; color: var(--vermilion); line-height: 1; }
+  .mini-stat-label { font-size: 10px; color: var(--ink-faint); letter-spacing: .1em; }
+  .region-bar-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .region-bar-title { font-size: 10px; color: var(--ink-faint); letter-spacing: .12em; margin-bottom: 10px; font-family: 'Shippori Mincho', serif; }
+  .region-bar-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .region-bar-item:last-child { margin-bottom: 0; }
+  .region-bar-name { font-family: 'Shippori Mincho', serif; font-size: 12px; color: var(--ink); width: 64px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .region-bar-track { flex: 1; height: 6px; background: var(--washi-dark); border-radius: 3px; overflow: hidden; }
+  .region-bar-fill { height: 100%; background: var(--vermilion); border-radius: 3px; transition: width .6s ease; }
+  .region-bar-count { font-size: 11px; color: var(--ink-faint); width: 24px; text-align: right; flex-shrink: 0; font-family: 'Shippori Mincho', serif; }
+  .year-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .year-chip { background: var(--washi-dark); border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 5px; }
+  .year-chip-year { font-family: 'Shippori Mincho', serif; font-size: 12px; color: var(--ink-faint); }
+  .year-chip-num { font-family: 'Shippori Mincho', serif; font-size: 14px; color: var(--vermilion); font-weight: 500; }
+  .streak-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+  .streak-icon { font-size: 28px; flex-shrink: 0; }
+  .streak-info { flex: 1; }
+  .streak-num { font-family: 'Shippori Mincho', serif; font-size: 22px; color: var(--vermilion); line-height: 1; }
+  .streak-label { font-size: 10px; color: var(--ink-faint); letter-spacing: .1em; margin-top: 4px; }
+  .section-header { padding: 0 20px 10px; display: flex; align-items: baseline; justify-content: space-between; }
+  .section-title { font-family: 'Shippori Mincho', serif; font-size: 15px; font-weight: 500; color: var(--ink); letter-spacing: .06em; }
+  .section-link { font-size: 12px; color: var(--vermilion); letter-spacing: .04em; cursor: pointer; }
+  .recent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px; }
+  /* ── 首頁收藏卡片 ── */
+  .goshuin-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; position: relative; box-shadow: 0 2px 8px var(--shadow); }
+  .goshuin-card:active { transform: scale(.96); box-shadow: 0 1px 3px var(--shadow); }
+  .card-img-placeholder { width: 100%; aspect-ratio: 3/4; background: var(--washi-dark); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .dark .card-img-placeholder { background: #2a2418; }
+  /* 無照片佔位：手繪風朱印圈 */
+  .card-no-photo { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+  .card-seal { width: 64px; height: 64px; border-radius: 50%; border: 2.5px solid var(--vermilion); opacity: .22; display: flex; align-items: center; justify-content: center; position: relative; }
+  .card-seal::before { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 1px solid var(--vermilion); }
+  .card-seal-kanji { font-family: 'Shippori Mincho', serif; font-size: 22px; color: var(--vermilion); opacity: .9; letter-spacing: -.02em; }
+  .card-no-photo-label { font-family: 'Shippori Mincho', serif; font-size: 10px; color: var(--ink-faint); opacity: .6; letter-spacing: .12em; }
+  .placeholder-kanji { font-family: 'Shippori Mincho', serif; font-size: 36px; color: var(--vermilion); opacity: .5; writing-mode: vertical-rl; }
+  .card-info { padding: 10px 12px 12px; }
+  .card-shrine { font-family: 'Shippori Mincho', serif; font-size: 13px; color: var(--ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-date { font-size: 10px; color: var(--ink-faint); margin-top: 3px; letter-spacing: .06em; }
+  .home-menu { margin: 20px 20px 0; display: flex; flex-direction: column; gap: 10px; }
+  .menu-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: background .15s; }
+  .menu-item:active { background: var(--washi-dark); }
+  .menu-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--vermilion-pale); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .menu-icon svg { width: 20px; height: 20px; color: var(--vermilion); }
+  .menu-text .menu-label { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--ink); letter-spacing: .04em; }
+  .menu-text .menu-desc { font-size: 11px; color: var(--ink-faint); margin-top: 2px; letter-spacing: .04em; }
+  .menu-arrow { margin-left: auto; color: var(--border); }
+
+  /* List */
+  .list-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; gap: 14px; cursor: pointer; margin-bottom: 10px; transition: transform .12s; box-shadow: 0 1px 4px var(--shadow); }
+  .list-item:active { transform: scale(.98); }
+  .list-thumb { width: 72px; height: 90px; border-radius: 10px; background: var(--washi-dark); flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; border: 1px solid var(--border); }
+  .list-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* 列表縮圖無照片佔位 */
+  .list-thumb-nophoto { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .list-thumb-seal { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--vermilion); opacity: .2; display: flex; align-items: center; justify-content: center; }
+  .list-thumb-seal span { font-family: 'Shippori Mincho', serif; font-size: 16px; color: var(--vermilion); opacity: 1; }
+  .list-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+  .list-shrine { font-family: 'Shippori Mincho', serif; font-size: 16px; color: var(--ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-meta { font-size: 11px; color: var(--ink-faint); letter-spacing: .06em; }
+  .list-note { font-size: 12px; color: var(--ink-light); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list-chevron { display: flex; align-items: center; color: var(--border); margin-left: 4px; }
+
+  /* Shrines */
+  .shrine-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; cursor: pointer; margin-bottom: 10px; transition: transform .12s; }
+  .shrine-badge { width: 44px; height: 44px; border-radius: 50%; background: var(--vermilion-pale); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .shrine-badge span { font-family: 'Shippori Mincho', serif; font-size: 18px; color: var(--vermilion); }
+  .shrine-info { flex: 1; min-width: 0; }
+  .shrine-name { font-family: 'Shippori Mincho', serif; font-size: 16px; color: var(--ink); letter-spacing: .04em; }
+  .shrine-count { font-size: 11px; color: var(--ink-faint); margin-top: 3px; letter-spacing: .06em; }
+  .shrine-last { font-size: 11px; color: var(--ink-faint); letter-spacing: .06em; text-align: right; flex-shrink: 0; }
+
+  /* Add form */
+  /* Multi-photo upload */
+  .photo-upload-area { width: 100%; aspect-ratio: 3/4; max-height: 320px; background: var(--bg-card); border: 2px dashed var(--border); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: border-color .15s; position: relative; overflow: hidden; }
+  .upload-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--vermilion-pale); display: flex; align-items: center; justify-content: center; }
+  .upload-icon svg { width: 24px; height: 24px; color: var(--vermilion); }
+  .upload-text { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--ink-light); letter-spacing: .06em; }
+  .upload-sub { font-size: 11px; color: var(--ink-faint); letter-spacing: .06em; }
+  /* Carousel inside upload area */
+  .photo-carousel { position: absolute; inset: 0; display: none; }
+  .photo-carousel.active { display: block; }
+  .photo-slides { display: flex; height: 100%; transition: transform .3s ease; will-change: transform; }
+  .photo-slide { min-width: 100%; height: 100%; flex-shrink: 0; }
+  .photo-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 5; }
+  .photo-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); transition: background .2s, transform .2s; }
+  .photo-dot.active { background: #fff; transform: scale(1.3); }
+  .photo-add-btn { position: absolute; bottom: 10px; right: 10px; width: 32px; height: 32px; background: rgba(0,0,0,.45); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; border: 1.5px solid rgba(255,255,255,.4); }
+  .photo-add-btn svg { width: 16px; height: 16px; color: #fff; }
+  .photo-del-btn { position: absolute; top: 60px; right: 10px; width: 28px; height: 28px; background: rgba(0,0,0,.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; border: 1.5px solid rgba(255,255,255,.3); font-size: 13px; color: #fff; line-height: 1; }
+  .photo-cover-btn { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,.45); border: 1.5px solid rgba(255,255,255,.4); border-radius: 20px; padding: 4px 10px; font-size: 11px; color: #fff; font-family: 'Shippori Mincho', serif; letter-spacing: .06em; cursor: pointer; z-index: 5; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .photo-cover-badge { position: absolute; top: 10px; left: 10px; background: var(--gold); border-radius: 20px; padding: 3px 9px; font-size: 10px; color: #fff; font-family: 'Shippori Mincho', serif; letter-spacing: .06em; z-index: 5; display: flex; align-items: center; gap: 3px; }
+  .photo-counter { position: absolute; top: 62px; left: 10px; background: rgba(0,0,0,.45); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; z-index: 5; font-family: 'Noto Sans JP', sans-serif; }
+  .form-group { margin-top: 20px; }
+  .form-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-faint); letter-spacing: .1em; margin-bottom: 8px; font-family: 'Shippori Mincho', serif; }
+  .form-label .required { font-size: 10px; color: var(--vermilion); }
+  .form-input, .form-textarea { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; font-size: 15px; font-family: inherit; color: var(--ink); outline: none; transition: border-color .15s; -webkit-appearance: none; }
+  .form-input:focus, .form-textarea:focus { border-color: var(--vermilion); }
+  .form-textarea { resize: none; height: 90px; line-height: 1.7; }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--border); }
+  .submit-btn { margin-top: 28px; width: 100%; padding: 18px; background: var(--vermilion); color: #fff; border: none; border-radius: 14px; font-family: 'Shippori Mincho', serif; font-size: 16px; letter-spacing: .12em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .submit-btn:active { opacity: .85; }
+
+  /* Detail image */
+  .detail-image-wrap { width: 100%; height: 340px; overflow: hidden; position: relative; background: #111; cursor: zoom-in; }
+  .detail-carousel { width: 100%; height: 100%; position: relative; }
+  .detail-slides { display: flex; height: 100%; transition: transform .3s ease; }
+  .detail-slide { min-width: 100%; height: 100%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .detail-slide img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+  .detail-dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; z-index: 5; }
+  .detail-counter { position: absolute; top: 66px; right: 12px; background: rgba(0,0,0,.45); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 10px; z-index: 5; }
+  /* 詳細頁無照片佔位 */
+  .detail-nophoto { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--washi-dark); }
+  .dark .detail-nophoto { background: #242018; }
+  .detail-nophoto-seal { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--vermilion); opacity: .18; display: flex; align-items: center; justify-content: center; position: relative; }
+  .detail-nophoto-seal::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; border: 1.5px solid var(--vermilion); }
+  .detail-nophoto-kanji { font-family: 'Shippori Mincho', serif; font-size: 36px; color: var(--vermilion); opacity: .9; }
+  .detail-nophoto-label { font-family: 'Shippori Mincho', serif; font-size: 11px; color: var(--ink-faint); letter-spacing: .18em; opacity: .7; }
+  /* 詳細頁無照片佔位裡的字要疊在圈圈上，重新調整結構 */
+  .detail-nophoto-ring { position: relative; width: 100px; height: 100px; }
+  .detail-nophoto-ring-circle { position: absolute; inset: 0; border-radius: 50%; border: 3px solid var(--vermilion); opacity: .2; }
+  .detail-nophoto-ring-inner { position: absolute; inset: 8px; border-radius: 50%; border: 1px solid var(--vermilion); opacity: .15; }
+  .detail-nophoto-ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Shippori Mincho', serif; font-size: 34px; color: var(--vermilion); opacity: .22; }
+  /* ── Location ── */
+  .location-btn { margin-top: 8px; width: 100%; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background .15s; font-family: inherit; }
+  .location-btn:active { background: var(--washi-dark); }
+  .location-btn svg { width: 18px; height: 18px; color: var(--vermilion); flex-shrink: 0; }
+  .location-btn-text { flex: 1; text-align: left; }
+  .location-btn-label { font-family: 'Shippori Mincho', serif; font-size: 14px; color: var(--ink); letter-spacing: .04em; }
+  .location-btn-sub { font-size: 11px; color: var(--ink-faint); margin-top: 2px; letter-spacing: .04em; }
+  .location-btn-clear { font-size: 18px; color: var(--border); cursor: pointer; padding: 2px 4px; line-height: 1; flex-shrink: 0; }
+  .location-btn.recorded { border-color: var(--vermilion); background: var(--vermilion-pale); }
+  .detail-map-wrap { margin: 0 20px 4px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); height: 180px; position: relative; background: var(--washi-dark); }
+  .detail-map-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+  .detail-map-label { font-size: 10px; color: var(--ink-faint); letter-spacing: .12em; margin: 0 20px 16px; font-family: 'Shippori Mincho', serif; display: flex; align-items: center; gap: 5px; }
+  .detail-map-label svg { width: 11px; height: 11px; color: var(--vermilion); }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.96); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; }
+  .lightbox.open { display: flex; }
+  .lightbox-close { position: absolute; top: 18px; right: 18px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 18px; z-index: 10; border: 1px solid rgba(255,255,255,.2); }
+  .lightbox-slides { display: flex; width: 100%; height: 100%; transition: transform .3s ease; }
+  .lightbox-slide { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 70px 0 50px; }
+  .lightbox-slide img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+  .lightbox-dots { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+  .lightbox-counter { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.7); font-size: 12px; letter-spacing: .08em; font-family: 'Noto Sans JP', sans-serif; }
+  .detail-image-placeholder { width: 100%; height: 100%; background: linear-gradient(160deg, var(--washi-dark) 0%, #e0d5bc 60%, #d4c8a8 100%); display: flex; align-items: center; justify-content: center; }
+  .dark .detail-image-placeholder { background: linear-gradient(160deg, #2a2418 0%, #322c1e 60%, #3a3222 100%); }
+  .detail-image-placeholder .big-kanji { font-family: 'Shippori Mincho', serif; font-size: 80px; color: var(--vermilion); opacity: .25; writing-mode: vertical-rl; }
+  .detail-body { padding: 24px 20px 0; }
+  .detail-shrine-name { font-family: 'Shippori Mincho', serif; font-size: 24px; font-weight: 500; color: var(--ink); letter-spacing: .06em; line-height: 1.3; }
+  .detail-divider { height: 1px; background: var(--border); margin: 20px 0; }
+  .detail-section-label { font-size: 11px; color: var(--ink-faint); letter-spacing: .14em; margin-bottom: 8px; font-family: 'Shippori Mincho', serif; }
+  .detail-note { font-size: 14px; color: var(--ink-light); line-height: 1.8; letter-spacing: .04em; }
+  .detail-actions { display: flex; gap: 10px; padding: 24px 20px; }
+  .action-btn { flex: 1; padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card); font-family: 'Shippori Mincho', serif; font-size: 14px; letter-spacing: .06em; color: var(--ink-light); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .action-btn.danger { color: var(--vermilion); border-color: var(--vermilion-pale); }
+  .action-btn svg { width: 16px; height: 16px; }
+
+  /* Badges */
+  .type-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10px; letter-spacing: .1em; font-family: 'Shippori Mincho', serif; flex-shrink: 0; }
+  .type-badge.shrine { background: #fef3e2; color: #b8692e; border: 1px solid #f0d4a8; }
+  .type-badge.temple { background: #e8f0fe; color: #3a6bc8; border: 1px solid #b8cef0; }
+  .dark .type-badge.shrine { background: #2a1e0a; color: #d4915a; border-color: #5a3a18; }
+  .dark .type-badge.temple { background: #0a1428; color: #6a9de8; border-color: #1a3464; }
+  .limited-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10px; letter-spacing: .1em; font-family: 'Shippori Mincho', serif; background: var(--gold-pale); color: var(--gold); border: 1px solid #e8d88a; flex-shrink: 0; }
+  .dark .limited-badge { border-color: #5a4a18; }
+  .limited-badge::before { content: '✦'; font-size: 9px; }
+  .detail-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .detail-meta-item { background: var(--washi-dark); border-radius: 10px; padding: 10px 12px; }
+  .detail-meta-label { font-size: 10px; color: var(--ink-faint); letter-spacing: .12em; margin-bottom: 4px; font-family: 'Shippori Mincho', serif; }
+  .detail-meta-value { font-size: 13px; color: var(--ink); letter-spacing: .04em; font-family: 'Shippori Mincho', serif; }
+  .detail-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .toggle-left { display: flex; flex-direction: column; gap: 3px; }
+  .toggle-title { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--ink); letter-spacing: .04em; display: flex; align-items: center; gap: 6px; }
+  .toggle-title .gold-star { color: var(--gold); font-size: 13px; }
+  .toggle-sub { font-size: 11px; color: var(--ink-faint); letter-spacing: .04em; }
+  .toggle-switch { width: 48px; height: 28px; background: var(--border); border-radius: 14px; position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+  .toggle-switch.on { background: var(--gold); }
+  .toggle-switch::after { content: ''; position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .toggle-switch.on::after { transform: translateX(20px); }
+
+  /* Type selector */
+  .type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .type-option { border: 1.5px solid var(--border); border-radius: 12px; padding: 13px 12px; text-align: center; cursor: pointer; background: var(--bg-card); transition: all .15s; font-family: 'Shippori Mincho', serif; }
+  .type-option .type-icon { font-size: 20px; margin-bottom: 5px; }
+  .type-option .type-name { font-size: 14px; color: var(--ink-light); letter-spacing: .06em; }
+  .type-option .type-sub { font-size: 10px; color: var(--ink-faint); margin-top: 2px; }
+  .type-option.selected.shrine { border-color: #b8692e; background: #fef8f0; }
+  .type-option.selected.temple { border-color: #3a6bc8; background: #f0f4ff; }
+  .dark .type-option.selected.shrine { background: #2a1e0a; }
+  .dark .type-option.selected.temple { background: #0a1428; }
+
+  /* Form section title */
+  .form-section-title { font-size: 11px; color: var(--ink-faint); letter-spacing: .14em; text-transform: uppercase; padding: 20px 0 10px; font-family: 'Shippori Mincho', serif; border-top: 1px solid var(--border); margin-top: 20px; display: flex; align-items: center; gap: 8px; }
+  .form-section-title::before { content: ''; width: 3px; height: 14px; background: var(--vermilion); border-radius: 2px; flex-shrink: 0; }
+
+  /* Search */
+  .search-wrap { padding: 10px 20px 0; position: relative; }
+  .search-input { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 11px 16px 11px 40px; font-size: 14px; font-family: inherit; color: var(--ink); outline: none; -webkit-appearance: none; }
+  .search-input:focus { border-color: var(--vermilion); }
+  .search-input::placeholder { color: var(--border); }
+  .search-icon { position: absolute; left: 33px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--ink-faint); pointer-events: none; }
+  .search-clear { position: absolute; right: 32px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; background: var(--border); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 11px; }
+  .search-clear.visible { display: flex; }
+  .search-result-count { font-size: 11px; color: var(--ink-faint); letter-spacing: .08em; padding: 8px 20px 0; font-family: 'Shippori Mincho', serif; }
+  /* 日付フィルター */
+  .date-filter-wrap { padding: 8px 20px 0; display: flex; align-items: center; gap: 8px; }
+  .date-filter-label { font-size: 11px; color: var(--ink-faint); font-family: 'Shippori Mincho', serif; letter-spacing: .08em; flex-shrink: 0; }
+  .date-filter-input { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--ink); outline: none; -webkit-appearance: none; min-width: 0; }
+  .date-filter-input:focus { border-color: var(--vermilion); }
+  .date-filter-sep { font-size: 12px; color: var(--ink-faint); flex-shrink: 0; }
+  .date-filter-clear { width: 26px; height: 26px; background: var(--border); border-radius: 50%; display: none; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 11px; flex-shrink: 0; }
+  .date-filter-clear.visible { display: flex; }
+  /* 限定 toggle */
+  .filter-chips-wrap { padding: 8px 20px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-chip { display: flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); font-size: 12px; color: var(--ink-faint); font-family: 'Shippori Mincho', serif; letter-spacing: .06em; cursor: pointer; transition: all .15s; user-select: none; }
+  .filter-chip.active { background: var(--gold-pale); border-color: var(--gold); color: var(--gold); }
+  .filter-chip.active.shrine-chip { background: #fef3e2; border-color: #b8692e; color: #b8692e; }
+  .filter-chip.active.temple-chip { background: #e8f0fe; border-color: #3a6bc8; color: #3a6bc8; }
+
+  /* Region cards */
+  .region-card { margin: 0 16px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+  .region-card-header { padding: 16px 18px 14px; display: flex; align-items: flex-start; gap: 14px; cursor: pointer; user-select: none; }
+  .region-stamp { width: 46px; height: 46px; border-radius: 50%; background: var(--vermilion-pale); border: 1.5px solid rgba(192,57,43,.15); display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; gap: 1px; }
+  .region-stamp-kanji { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--vermilion); line-height: 1; }
+  .region-stamp-dot { width: 3px; height: 3px; background: var(--vermilion); border-radius: 50%; opacity: .4; }
+  .region-card-meta { flex: 1; min-width: 0; }
+  .region-card-name { font-family: 'Shippori Mincho', serif; font-size: 18px; font-weight: 500; color: var(--ink); letter-spacing: .06em; }
+  .region-card-sub { margin-top: 5px; display: flex; align-items: center; gap: 8px; }
+  .region-card-count { font-family: 'Shippori Mincho', serif; font-size: 12px; color: var(--vermilion); }
+  .region-card-shrines { font-size: 11px; color: var(--ink-faint); }
+  .region-card-chevron { color: var(--ink-faint); transition: transform .22s ease; flex-shrink: 0; margin-top: 12px; }
+  .region-card.collapsed .region-card-chevron { transform: rotate(-90deg); }
+  .region-thumb-strip { display: flex; gap: 6px; padding: 0 18px 14px; overflow-x: auto; }
+  .region-thumb { width: 52px; height: 66px; border-radius: 8px; flex-shrink: 0; background: linear-gradient(135deg, var(--washi-dark), #e0d4b8); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border); position: relative; cursor: pointer; transition: transform .12s; }
+  .region-thumb:active { transform: scale(.94); }
+  .region-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .region-thumb-kanji { font-family: 'Shippori Mincho', serif; font-size: 18px; color: var(--vermilion); opacity: .4; writing-mode: vertical-rl; }
+  .region-thumb-limited { position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; background: var(--gold); border-radius: 50%; }
+  .region-card-divider { height: 1px; background: var(--border); margin: 0 18px 12px; }
+  .region-card-body { overflow: hidden; transition: max-height .28s ease, opacity .2s ease; max-height: 600px; opacity: 1; }
+  .region-card.collapsed .region-card-body { max-height: 0; opacity: 0; }
+  .region-entry { display: flex; align-items: center; gap: 12px; padding: 10px 18px; cursor: pointer; transition: background .12s; border-top: 1px solid var(--border); }
+  .region-entry:active { background: var(--washi-dark); }
+  .region-entry-thumb { width: 40px; height: 50px; border-radius: 6px; background: linear-gradient(135deg, var(--washi-dark), #e0d4b8); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 1px solid var(--border); }
+  .region-entry-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .region-entry-thumb-kanji { font-family: 'Shippori Mincho', serif; font-size: 14px; color: var(--vermilion); opacity: .45; writing-mode: vertical-rl; }
+  .region-entry-info { flex: 1; min-width: 0; }
+  .region-entry-name { font-family: 'Shippori Mincho', serif; font-size: 14px; color: var(--ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .region-entry-meta { font-size: 11px; color: var(--ink-faint); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .region-entry-chevron { color: var(--border); flex-shrink: 0; }
+  .region-entry-chevron svg { width: 14px; height: 14px; }
+
+  /* Shrine type tabs */
+  .shrine-type-tabs { display: flex; gap: 8px; padding: 12px 20px 0; overflow-x: auto; }
+  .shrine-type-tab { flex-shrink: 0; padding: 6px 16px; border-radius: 20px; font-size: 12px; letter-spacing: .06em; cursor: pointer; border: 1px solid var(--border); color: var(--ink-faint); background: var(--bg-card); font-family: inherit; display: flex; align-items: center; gap: 5px; }
+  .shrine-type-tab.active { background: var(--vermilion); border-color: var(--vermilion); color: #fff; }
+  .shrine-type-tab .tab-count { background: rgba(255,255,255,.3); border-radius: 10px; padding: 1px 6px; font-size: 10px; }
+  .shrine-type-tab:not(.active) .tab-count { background: var(--washi-dark); color: var(--ink-faint); }
+
+  /* Region group */
+  .region-group { margin-bottom: 6px; }
+  .region-group-header { display: flex; align-items: center; gap: 10px; padding: 18px 20px 8px; }
+  .region-group-label { font-family: 'Shippori Mincho', serif; font-size: 13px; color: var(--ink-faint); letter-spacing: .12em; }
+  .region-group-line { flex: 1; height: 1px; background: var(--border); }
+  .region-group-count { font-size: 11px; color: var(--border); letter-spacing: .08em; flex-shrink: 0; }
+
+  /* Form select */
+  .form-select { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 40px 14px 16px; font-size: 15px; font-family: inherit; color: var(--ink); outline: none; -webkit-appearance: none; appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7d6e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+  .form-select:focus { border-color: var(--vermilion); }
+
+  /* Nav bar */
+  .nav-bar { display: flex; align-items: center; padding: 0 16px; height: 52px; flex-shrink: 0; position: relative; border-bottom: 1px solid var(--border); background: var(--washi); }
+  .nav-bar-title { position: absolute; left: 50%; transform: translateX(-50%); font-family: 'Shippori Mincho', serif; font-size: 17px; color: var(--ink); letter-spacing: .06em; white-space: nowrap; pointer-events: none; }
+  .nav-back { display: flex; align-items: center; gap: 3px; color: var(--vermilion); font-size: 14px; font-family: inherit; cursor: pointer; padding: 6px 2px; z-index: 1; }
+  .nav-back svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Tab bar */
+  .tab-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 390px; background: rgba(245,240,232,0.96); backdrop-filter: blur(12px); border-top: 1px solid var(--border); display: flex; align-items: stretch; z-index: 150; padding-bottom: env(safe-area-inset-bottom, 0px); transition: background .3s; }
+  .dark .tab-bar { background: rgba(26,23,18,0.96); }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 0 12px; cursor: pointer; position: relative; }
+  .tab-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); transition: color .2s; }
+  .tab-icon svg { width: 22px; height: 22px; }
+  .tab-label { font-size: 9px; letter-spacing: .06em; color: var(--ink-faint); font-family: 'Shippori Mincho', serif; transition: color .2s; }
+  .tab-item.active .tab-icon, .tab-item.active .tab-label { color: var(--vermilion); }
+  .tab-item.active::after { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px; background: var(--vermilion); border-radius: 0 0 2px 2px; }
+  .tab-item.tab-add .tab-icon { width: 44px; height: 44px; background: var(--vermilion); border-radius: 50%; color: #fff; box-shadow: 0 3px 14px rgba(192,57,43,.4); margin-top: -10px; }
+  .tab-item.tab-add .tab-icon svg { width: 20px; height: 20px; }
+  .tab-item.tab-add .tab-label { color: var(--vermilion); }
+
+  /* Toast / overlay / dialog */
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: var(--washi); padding: 12px 22px; border-radius: 24px; font-size: 13px; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 200; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty-state { padding: 60px 30px; text-align: center; }
+  .empty-kanji { font-family: 'Shippori Mincho', serif; font-size: 56px; color: var(--border); line-height: 1; margin-bottom: 16px; }
+  .empty-text { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--ink-faint); letter-spacing: .08em; line-height: 1.8; }
+  .overlay { position: fixed; inset: 0; background: rgba(26,21,16,.5); z-index: 300; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .overlay.show { opacity: 1; pointer-events: all; }
+  /* Share card dialog */
+  .share-dialog { width: 100%; max-width: 390px; margin: 0 auto; background: var(--washi); border-radius: 20px 20px 0 0; padding: 20px 20px 40px; transform: translateY(40px); transition: transform .25s; }
+  .overlay.show .share-dialog { transform: translateY(0); }
+  .share-dialog-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .share-dialog-title { font-family: 'Shippori Mincho', serif; font-size: 16px; color: var(--ink); letter-spacing: .06em; }
+  .share-dialog-close { width: 28px; height: 28px; background: var(--washi-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; color: var(--ink-faint); }
+  .share-canvas-wrap { width: 100%; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px var(--shadow); }
+  .share-canvas-wrap canvas { width: 100%; height: auto; display: block; }
+  .share-hint { font-size: 11px; color: var(--ink-faint); text-align: center; margin: 12px 0 14px; letter-spacing: .08em; font-family: 'Shippori Mincho', serif; }
+  .share-save-btn { width: 100%; padding: 15px; background: var(--vermilion); color: #fff; border: none; border-radius: 12px; font-family: 'Shippori Mincho', serif; font-size: 15px; letter-spacing: .1em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .share-save-btn:active { opacity: .85; }
+  .dialog { width: 100%; max-width: 390px; margin: 0 auto; background: var(--washi); border-radius: 20px 20px 0 0; padding: 28px 20px 40px; transform: translateY(40px); transition: transform .25s; }
+  .overlay.show .dialog { transform: translateY(0); }
+  .dialog-title { font-family: 'Shippori Mincho', serif; font-size: 18px; color: var(--ink); text-align: center; margin-bottom: 8px; letter-spacing: .06em; }
+  .dialog-msg { font-size: 13px; color: var(--ink-faint); text-align: center; margin-bottom: 24px; line-height: 1.7; }
+  .dialog-btns { display: flex; gap: 10px; }
+  .dialog-btn { flex: 1; padding: 15px; border-radius: 12px; border: 1px solid var(--border); font-family: 'Shippori Mincho', serif; font-size: 15px; cursor: pointer; letter-spacing: .06em; background: var(--bg-card); color: var(--ink-light); }
+  .dialog-btn.confirm { background: var(--vermilion); color: #fff; border-color: var(--vermilion); }
+
+  /* ── Wishlist ── */
+  .wishlist-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin: 0 20px 10px; }
+  .wishlist-badge { width: 42px; height: 42px; border-radius: 50%; background: var(--gold-pale); border: 1.5px solid rgba(184,150,46,.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .wishlist-badge span { font-family: 'Shippori Mincho', serif; font-size: 18px; color: var(--gold); }
+  .wishlist-info { flex: 1; min-width: 0; }
+  .wishlist-name { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wishlist-meta { font-size: 11px; color: var(--ink-faint); margin-top: 3px; letter-spacing: .04em; }
+  .wishlist-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .wishlist-btn { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-family: 'Shippori Mincho', serif; letter-spacing: .04em; cursor: pointer; border: 1px solid var(--border); background: var(--bg-card); color: var(--ink-faint); white-space: nowrap; }
+  .wishlist-btn.go { background: var(--vermilion); color: #fff; border-color: var(--vermilion); }
+  .wishlist-btn.del { color: var(--border); }
+  /* ── Settings page ── */
+  #page-settings .scroll-area { padding: 20px 20px 100px; }
+  .settings-section-title {
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: .14em;
+    padding: 20px 0 10px;
+    font-family: 'Shippori Mincho', serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .settings-section-title:first-child { padding-top: 0; }
+  .settings-section-title::before { content: ''; width: 3px; height: 14px; background: var(--vermilion); border-radius: 2px; flex-shrink: 0; }
+  .settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .settings-row { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-icon { width: 38px; height: 38px; border-radius: 10px; background: var(--vermilion-pale); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+  .settings-info { flex: 1; }
+  .settings-label { font-family: 'Shippori Mincho', serif; font-size: 15px; color: var(--ink); letter-spacing: .04em; }
+  .settings-sub { font-size: 11px; color: var(--ink-faint); margin-top: 3px; letter-spacing: .04em; }
+  /* Dark mode toggle inside settings */
+  .dark-toggle { width: 48px; height: 28px; background: var(--border); border-radius: 14px; position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+  .dark-toggle.on { background: var(--vermilion); }
+  .dark-toggle::after { content: ''; position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+  .dark-toggle.on::after { transform: translateX(20px); }
+  /* Language options */
+  .lang-select-wrap { position: relative; }
+  .lang-select { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 40px 14px 16px; font-size: 15px; font-family: inherit; color: var(--ink); outline: none; -webkit-appearance: none; appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a7d6e' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; transition: border-color .15s; }
+  .lang-select:focus { border-color: var(--vermilion); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- HOME -->
+  <div id="page-home" class="page active">
+    <div class="status-bar"><span id="status-time">9:41</span><span>御朱印帳</span><span>●●●</span></div>
+    <div class="scroll-area" style="padding-bottom:100px">
+    <div class="hero">
+      <div class="hero-seal" onclick="document.getElementById('avatar-input').click()">
+        <span id="hero-seal-char">御</span>
+        <img id="hero-avatar-img" style="display:none" alt="avatar">
+        <div class="hero-seal-edit">✎</div>
+      </div>
+      <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="onAvatarChange(this)">
+      <div class="hero-text">
+        <div class="app-name" id="home-app-name">御朱印帳</div>
+        <div class="app-sub">GOSHUIN COLLECTION</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stat-count">0</div><div class="stat-label" data-i18n="statGoshuin">御朱印</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-shrines">0</div><div class="stat-label" data-i18n="statShrines">神社・寺</div></div>
+    </div>
+    <div style="margin: -10px 20px 20px">
+      <div class="stat-card" onclick="goTo('wishlist')" style="cursor:pointer;border-color:var(--gold);background:var(--gold-pale);display:flex;align-items:center;justify-content:space-between;padding:12px 16px;text-align:left">
+        <div>
+          <div style="font-size:10px;color:var(--gold);letter-spacing:.1em;margin-bottom:4px" data-i18n="statWishlist">行きたい</div>
+          <div style="font-family:'Shippori Mincho',serif;font-size:26px;font-weight:500;color:var(--gold);line-height:1" id="stat-wishlist">0</div>
+        </div>
+        <div style="font-size:22px;opacity:.6">✦</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <!-- 最近の御朱印 -->
+    <div id="home-recent-section">
+      <div class="section-header" style="padding-top:16px">
+        <div class="section-title" data-i18n="recentTitle">最近の御朱印</div>
+        <div class="section-link" onclick="goTo('list')" data-i18n="seeAll">すべて見る</div>
+      </div>
+      <div class="recent-grid" id="home-recent-grid" style="padding-bottom:20px"></div>
+      <div id="home-empty" class="empty-state" style="display:none">
+        <div class="empty-kanji">御</div>
+        <div class="empty-text" data-i18n="homeEmpty">まだ御朱印がありません。<br>＋ボタンから追加してください。</div>
+      </div>
+    </div><!-- end home-recent-section -->
+    </div><!-- end scroll-area -->
+
+  </div>
+
+  <!-- LIST -->
+  <div id="page-list" class="page">
+    <div class="nav-bar">
+      <div class="nav-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="back">もどる</span></div>
+      <div class="nav-bar-title" id="list-nav-title" data-i18n="menuList">御朱印帳</div>
+    </div>
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" class="search-input" id="search-input" placeholder="寺社名称・地域で検索..." oninput="onSearch(this.value)">
+      <div class="search-clear" id="search-clear" onclick="clearSearch()">✕</div>
+    </div>
+    <div class="date-filter-wrap">
+      <div class="date-filter-label">期間</div>
+      <input type="date" class="date-filter-input" id="date-from" onchange="onDateFilter()">
+      <div class="date-filter-sep">—</div>
+      <input type="date" class="date-filter-input" id="date-to" onchange="onDateFilter()">
+      <div class="date-filter-clear" id="date-filter-clear" onclick="clearDateFilter()">✕</div>
+    </div>
+    <div class="filter-chips-wrap">
+      <div class="filter-chip" id="chip-limited" onclick="toggleChip('limited')">✦ <span data-i18n="limitedLabel">限定</span></div>
+      <div class="filter-chip shrine-chip" id="chip-shrine" onclick="toggleChip('shrine')">⛩ <span data-i18n="shrine">神社</span></div>
+      <div class="filter-chip temple-chip" id="chip-temple" onclick="toggleChip('temple')">🏯 <span data-i18n="temple">寺院</span></div>
+    </div>
+    <div class="search-result-count" id="search-count" style="display:none"></div>
+    <div class="scroll-area" style="padding-top:14px">
+      <div id="list-items"></div>
+      <div id="list-empty" class="empty-state" style="display:none"><div class="empty-kanji">御</div><div class="empty-text" data-i18n="homeEmpty">まだ御朱印がありません。</div></div>
+    </div>
+  </div>
+
+  <!-- SHRINES -->
+  <div id="page-shrines" class="page">
+    <div class="nav-bar">
+      <div class="nav-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="back">もどる</span></div>
+      <div class="nav-bar-title" data-i18n="menuShrines">神社・寺一覧</div>
+    </div>
+    <div class="shrine-type-tabs">
+      <div class="shrine-type-tab active" data-type="all" onclick="setShrineTypeFilter('all')"><span data-i18n="tabAll">すべて</span> <span class="tab-count" id="stab-count-all">0</span></div>
+      <div class="shrine-type-tab" data-type="shrine" onclick="setShrineTypeFilter('shrine')">⛩ <span data-i18n="shrine">神社</span> <span class="tab-count" id="stab-count-shrine">0</span></div>
+      <div class="shrine-type-tab" data-type="temple" onclick="setShrineTypeFilter('temple')">🏯 <span data-i18n="temple">寺院</span> <span class="tab-count" id="stab-count-temple">0</span></div>
+    </div>
+    <div class="divider" style="margin-top:12px"></div>
+    <div class="scroll-area" style="padding-top:4px">
+      <div id="shrines-list"></div>
+      <div id="shrines-empty" class="empty-state" style="display:none"><div class="empty-kanji">社</div><div class="empty-text">まだ記録がありません。</div></div>
+    </div>
+  </div>
+
+  <!-- ADD -->
+  <div id="page-add" class="page">
+    <div class="nav-bar">
+      <div class="nav-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="back">もどる</span></div>
+      <div class="nav-bar-title" id="add-page-title" data-i18n="addTitle">御朱印を追加</div>
+    </div>
+    <div class="scroll-area">
+      <div class="photo-upload-area" id="upload-area" onclick="handleUploadAreaClick(event)">
+        <div class="upload-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg></div>
+        <div class="upload-text" data-i18n="addPhoto">写真を追加</div>
+        <div class="upload-sub" data-i18n="addPhotoSub">タップして撮影・選択</div>
+        <!-- carousel (shown when photos exist) -->
+        <div class="photo-carousel" id="upload-carousel">
+          <div class="photo-slides" id="upload-slides"></div>
+          <div class="photo-dots" id="upload-dots"></div>
+          <div class="photo-counter" id="upload-counter"></div>
+          <div class="photo-add-btn" id="upload-add-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div class="photo-del-btn" id="upload-del-btn" onclick="event.stopPropagation();deleteCurrentPhoto()">✕</div>
+        </div>
+      </div>
+      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="addPhoto(this)">
+      <div class="form-section-title" data-i18n="basicInfo">基本情報</div>
+      <div class="form-group" style="margin-top:0">
+        <div class="form-label"><span data-i18n="shrineName">寺社名称</span> <span class="required">必須</span></div>
+        <div style="position:relative">
+          <input type="text" class="form-input" id="input-shrine" placeholder="例：伏見稲荷大社" oninput="onShrineInput(this.value)" onblur="hideSuggestions()" autocomplete="off">
+          <div id="shrine-suggestions" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;z-index:50;box-shadow:0 4px 16px var(--shadow)"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label"><span data-i18n="type">種別</span> <span class="required">必須</span></div>
+        <div class="type-selector">
+          <div class="type-option shrine selected" id="type-shrine" onclick="selectType('shrine')"><div class="type-icon">⛩</div><div class="type-name" data-i18n="shrine">神社</div><div class="type-sub">Shrine</div></div>
+          <div class="type-option temple" id="type-temple" onclick="selectType('temple')"><div class="type-icon">🏯</div><div class="type-name" data-i18n="temple">寺院</div><div class="type-sub">Temple</div></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label"><span data-i18n="visitDate">参拝日</span> <span class="required">必須</span></div>
+        <input type="date" class="form-input" id="input-date">
+      </div>
+      <div class="form-group">
+        <div class="form-label"><span data-i18n="region">地域</span> <span style="font-size:10px;color:var(--border)">任意</span></div>
+        <select class="form-select" id="input-region">
+          <option value="">選択してください</option>
+          <optgroup label="北海道・東北"><option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option></optgroup>
+          <optgroup label="関東"><option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option></optgroup>
+          <optgroup label="中部"><option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option></optgroup>
+          <optgroup label="近畿"><option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option></optgroup>
+          <optgroup label="中国・四国"><option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option></optgroup>
+          <optgroup label="九州・沖縄"><option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option></optgroup>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label"><span data-i18n="location">現在地</span> <span style="font-size:10px;color:var(--border)">任意</span></div>
+        <div class="location-btn" id="location-btn" onclick="recordLocation()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 00-8-8z"/></svg>
+          <div class="location-btn-text">
+            <div class="location-btn-label" id="location-btn-label" data-i18n="locationBtn">現在地を記録する</div>
+            <div class="location-btn-sub" id="location-btn-sub" data-i18n="locationBtnSub">タップしてGPS位置を取得</div>
+          </div>
+          <div class="location-btn-clear" id="location-btn-clear" style="display:none" onclick="event.stopPropagation();clearLocation()">✕</div>
+        </div>
+      </div>
+
+      <div class="form-section-title" data-i18n="detailInfo">詳細情報</div>
+      <div class="form-group" style="margin-top:0">
+        <div class="toggle-row" onclick="toggleLimited()">
+          <div class="toggle-left">
+            <div class="toggle-title"><span class="gold-star">✦</span> <span data-i18n="limited">限定御朱印</span></div>
+            <div class="toggle-sub" data-i18n="limitedSub">季節・特別限定の御朱印はオンに</div>
+          </div>
+          <div class="toggle-switch" id="toggle-limited"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label"><span data-i18n="memo">メモ</span> <span style="font-size:10px;color:var(--border)">任意</span></div>
+        <textarea class="form-textarea" id="input-note" placeholder="旅の思い出、印象に残ったことなど..."></textarea>
+      </div>
+      <button class="submit-btn" onclick="saveGoshuin()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/></svg>
+        <span data-i18n="save">記録する</span>
+      </button>
+      <button id="delete-btn" onclick="confirmDelete()" style="display:none;margin-top:32px;width:50%;margin-left:auto;margin-right:auto;padding:9px;background:none;border:1px solid var(--vermilion);border-radius:12px;color:var(--vermilion);font-family:'Shippori Mincho',serif;font-size:13px;letter-spacing:.1em;cursor:pointer;align-items:center;justify-content:center;gap:6px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        <span data-i18n="delete">削除する</span>
+      </button>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+
+  <!-- Delete confirm overlay -->
+  <div class="overlay" id="delete-overlay">
+    <div class="dialog">
+      <div class="dialog-title" data-i18n="deleteTitle">記録を削除しますか？</div>
+      <div class="dialog-msg" data-i18n="deleteMsg">この操作は元に戻せません。<br>御朱印の記録が削除されます。</div>
+      <div class="dialog-btns">
+        <div class="dialog-btn" onclick="closeDialog()" data-i18n="cancel">キャンセル</div>
+        <div class="dialog-btn confirm" onclick="deleteEntry()" data-i18n="delete">削除する</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div id="page-detail" class="page">
+    <div class="nav-bar" style="position:absolute;top:0;left:0;right:0;background:rgba(245,240,232,0.85);backdrop-filter:blur(8px);border-bottom:none;z-index:10">
+      <div class="nav-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="back">もどる</span></div>
+    </div>
+    <div style="position:relative">
+      <div class="detail-image-wrap" id="detail-img-wrap" onclick="openLightbox()">
+        <div class="detail-nophoto">
+          <div class="detail-nophoto-ring">
+            <div class="detail-nophoto-ring-circle"></div>
+            <div class="detail-nophoto-ring-inner"></div>
+            <div class="detail-nophoto-ring-text">御</div>
+          </div>
+          <div class="detail-nophoto-label">NO PHOTO</div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-area" style="padding-bottom:20px">
+      <div class="detail-body">
+        <div class="detail-shrine-name" id="detail-shrine"></div>
+        <div class="detail-badges" id="detail-badges"></div>
+        <div class="detail-meta-grid">
+          <div class="detail-meta-item"><div class="detail-meta-label" data-i18n="visitDate">参拝日</div><div class="detail-meta-value" id="detail-date"></div></div>
+          <div class="detail-meta-item" id="detail-region-item"><div class="detail-meta-label" data-i18n="region">地域</div><div class="detail-meta-value" id="detail-region"></div></div>
+        </div>
+        <div class="detail-divider"></div>
+        <div id="detail-note-section"><div class="detail-section-label" data-i18n="memo">メモ</div><div class="detail-note" id="detail-note"></div></div>
+        <div id="detail-map-section" style="display:none">
+          <div class="detail-divider"></div>
+          <div class="detail-map-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 00-8 8c0 5.25 8 14 8 14s8-8.75 8-14a8 8 0 00-8-8z"/></svg>
+            <span id="detail-map-coords"></span>
+          </div>
+          <div class="detail-map-wrap"><iframe id="detail-map-frame" loading="lazy"></iframe></div>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <div class="action-btn" onclick="editEntry()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span data-i18n="edit">編集</span></div>
+        <div class="action-btn" onclick="openShareCard()" style="color:var(--vermilion);border-color:var(--vermilion-pale)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16,6 12,2 8,6"/><line x1="12" y1="2" x2="12" y2="15"/></svg><span data-i18n="share">シェア</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="page-settings" class="page">
+    <div class="status-bar"><span>9:41</span><span></span><span>●●●</span></div>
+    <div style="padding: 0 20px 16px; display:flex; align-items:flex-end;">
+      <div>
+        <div style="font-size:11px;color:var(--ink-faint);letter-spacing:.12em;margin-bottom:4px" data-i18n="settingsSub">PREFERENCES</div>
+        <div style="font-family:'Shippori Mincho',serif;font-size:26px;font-weight:500;color:var(--ink);letter-spacing:.06em" data-i18n="settingsTitle">設定</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="scroll-area">
+
+      <div class="settings-section-title" data-i18n="profileSection">プロフィール</div>
+      <div class="settings-card">
+        <!-- 頭像 -->
+        <div class="settings-row" onclick="document.getElementById('avatar-input-settings').click()" style="cursor:pointer">
+          <div style="width:44px;height:44px;border-radius:50%;background:var(--vermilion);overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(192,57,43,.25)">
+            <span id="settings-avatar-char" style="font-family:'Shippori Mincho',serif;font-size:18px;color:#fff">御</span>
+            <img id="settings-avatar-img" style="display:none;width:100%;height:100%;object-fit:cover" alt="avatar">
+          </div>
+          <div class="settings-info">
+            <div class="settings-label" data-i18n="avatarLabel">プロフィール写真</div>
+            <div class="settings-sub" data-i18n="avatarSub">タップして変更</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--border);flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <input type="file" id="avatar-input-settings" accept="image/*" style="display:none" onchange="onAvatarChange(this)">
+        <!-- 用戶名 -->
+        <div class="settings-row" style="border-top:1px solid var(--border)">
+          <div class="settings-icon">✏️</div>
+          <div class="settings-info" style="min-width:0">
+            <div class="settings-label" data-i18n="usernameLabel">ユーザー名</div>
+            <input type="text" id="username-input"
+              style="margin-top:6px;width:100%;background:var(--washi-dark);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:14px;font-family:'Shippori Mincho',serif;color:var(--ink);outline:none;letter-spacing:.04em"
+              placeholder="例：田中たろう"
+              maxlength="20"
+              oninput="onUsernameChange(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section-title" data-i18n="appearance">外観</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-icon">🌙</div>
+          <div class="settings-info">
+            <div class="settings-label" data-i18n="darkMode">ダークモード</div>
+            <div class="settings-sub" data-i18n="darkModeSub">画面を暗くして目を保護</div>
+          </div>
+          <div class="dark-toggle" id="dark-toggle" onclick="toggleDark()"></div>
+        </div>
+      </div>
+
+      <div class="settings-section-title" style="margin-top:8px" data-i18n="language">言語 / Language</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-icon">🌐</div>
+          <div class="settings-info">
+            <div class="settings-label" data-i18n="language">言語 / Language</div>
+          </div>
+          <div class="lang-select-wrap" style="min-width:130px">
+            <select class="lang-select" id="lang-select" onchange="setLang(this.value)">
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="zh">🇹🇼 繁體中文</option>
+              <option value="en">🇺🇸 English</option>
+              <option value="ko">🇰🇷 한국어</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section-title" style="margin-top:8px" data-i18n="statsSection">統計</div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="goTo('stats')" style="cursor:pointer">
+          <div class="settings-icon">📊</div>
+          <div class="settings-info">
+            <div class="settings-label" data-i18n="statsLabel">巡禮統計を見る</div>
+            <div class="settings-sub" data-i18n="statsSub">地域・年別・限定の分析</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--border);flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+
+      <div class="settings-section-title" style="margin-top:8px" data-i18n="dataSection">データ管理</div>
+      <div class="settings-card">
+        <div class="settings-row" onclick="exportData()" style="cursor:pointer">
+          <div class="settings-icon">📦</div>
+          <div class="settings-info">
+            <div class="settings-label" data-i18n="exportLabel">データを書き出す</div>
+            <div class="settings-sub" data-i18n="exportSub">JSON形式で全記録をダウンロード</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--border);flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+        <div class="settings-row" onclick="document.getElementById('import-file-input').click()" style="cursor:pointer;border-top:1px solid var(--border)">
+          <div class="settings-icon">📥</div>
+          <div class="settings-info">
+            <div class="settings-label" data-i18n="importLabel">データを読み込む</div>
+            <div class="settings-sub" data-i18n="importSub">JSONファイルから記録を復元・追加</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--border);flex-shrink:0"><path d="M9 18l6-6-6-6"/></svg>
+        </div>
+      </div>
+      <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importData(this)">
+
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div id="page-stats" class="page">
+    <div class="nav-bar">
+      <div class="nav-back" onclick="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span data-i18n="back">もどる</span>
+      </div>
+      <div class="nav-bar-title" data-i18n="statsLabel">巡禮統計</div>
+    </div>
+    <div class="scroll-area" style="padding:16px 20px 100px">
+      <!-- 3 mini stats -->
+      <div class="stats-panel-row" style="margin-bottom:10px">
+        <div class="mini-stat">
+          <div class="mini-stat-num" id="stat-prefectures">0</div>
+          <div class="mini-stat-label" data-i18n="statPref">都道府県</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-num" id="stat-limited">0</div>
+          <div class="mini-stat-label" data-i18n="statLimited">限定御朱印</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-num" id="stat-thisyear">0</div>
+          <div class="mini-stat-label" data-i18n="statThisYear">今年</div>
+        </div>
+      </div>
+      <!-- 地域ランキング -->
+      <div class="region-bar-wrap" id="stat-region-bars" style="margin-bottom:10px"></div>
+      <!-- 年別 -->
+      <div class="region-bar-wrap" id="stat-year-chips" style="padding:14px 16px;margin-bottom:10px"></div>
+      <!-- 神社 vs 寺院 -->
+      <div class="region-bar-wrap" id="stat-type-breakdown" style="padding:14px 16px"></div>
+    </div>
+  </div>
+
+  <!-- WISHLIST -->
+  <div id="page-wishlist" class="page">
+    <div class="nav-bar">
+      <div class="nav-back" onclick="goBack()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span data-i18n="back">もどる</span>
+      </div>
+      <div class="nav-bar-title" data-i18n="wishlistTitle">行きたい神社・寺</div>
+    </div>
+    <!-- 検索 -->
+    <div class="search-wrap" style="padding-bottom:4px">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" class="search-input" id="wishlist-search" placeholder="神社・寺を検索して追加..." oninput="onWishlistSearch(this.value)" autocomplete="off">
+      <div class="search-clear" id="wishlist-search-clear" onclick="clearWishlistSearch()">✕</div>
+    </div>
+    <!-- 検索サジェスト -->
+    <div id="wishlist-suggestions" style="display:none;margin:4px 20px 0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 4px 16px var(--shadow);z-index:50;position:relative"></div>
+    <div class="scroll-area" style="padding-top:12px">
+      <div id="wishlist-items"></div>
+      <div id="wishlist-empty" class="empty-state">
+        <div class="empty-kanji" style="color:var(--gold);opacity:.4">✦</div>
+        <div class="empty-text" data-i18n="wishlistEmpty">行きたい神社・寺がありません。<br>上の検索欄から追加しましょう。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar" id="tab-bar">
+    <div class="tab-item active" id="tab-home" onclick="goTo('home')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></div>
+      <div class="tab-label" data-i18n="tabHome">ホーム</div>
+    </div>
+    <div class="tab-item" id="tab-list" onclick="goTo('list')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+      <div class="tab-label" data-i18n="tabList">一覧</div>
+    </div>
+    <div class="tab-item tab-add" onclick="goTo('add')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div class="tab-label" data-i18n="tabAdd">追加</div>
+    </div>
+    <div class="tab-item" id="tab-shrines" onclick="goTo('shrines')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+      <div class="tab-label" data-i18n="tabShrines">神社・寺</div>
+    </div>
+    <div class="tab-item" id="tab-settings" onclick="goTo('settings')">
+      <div class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
+      <div class="tab-label" data-i18n="tabSettings">設定</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <!-- Share Card -->
+  <div class="overlay" id="share-overlay" onclick="closeShareCard(event)">
+    <div class="share-dialog" onclick="event.stopPropagation()">
+      <div class="share-dialog-header">
+        <div class="share-dialog-title" data-i18n="shareTitle">御朱印カードを保存</div>
+        <div class="share-dialog-close" onclick="closeShareCard()">✕</div>
+      </div>
+      <div class="share-canvas-wrap">
+        <canvas id="share-canvas"></canvas>
+      </div>
+      <div class="share-hint" data-i18n="shareHint">長押し・または下のボタンで保存</div>
+      <button class="share-save-btn" onclick="downloadShareCard()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span data-i18n="saveImage">画像を保存</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightboxOnBg(event)">
+    <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+    <div class="lightbox-counter" id="lb-counter"></div>
+    <div style="width:100%;height:100%;overflow:hidden;position:relative">
+      <div class="lightbox-slides" id="lb-slides"></div>
+    </div>
+    <div class="lightbox-dots" id="lb-dots"></div>
+  </div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ── Profile ──
+let userProfile = JSON.parse(localStorage.getItem('goshuin_profile') || '{}');
+// { username: '', avatar: null }
+
+function saveProfile() {
+  localStorage.setItem('goshuin_profile', JSON.stringify(userProfile));
+}
+
+function applyProfile() {
+  const name = userProfile.username || '';
+  const avatar = userProfile.avatar || null;
+
+  // 首頁 hero
+  const heroChar = document.getElementById('hero-seal-char');
+  const heroImg  = document.getElementById('hero-avatar-img');
+  const appName  = document.getElementById('home-app-name');
+
+  if (avatar) {
+    heroChar.style.display = 'none';
+    heroImg.src = avatar;
+    heroImg.style.display = 'block';
+  } else {
+    heroChar.style.display = '';
+    heroImg.style.display = 'none';
+  }
+  // 名前表示
+  if (name) {
+    appName.textContent = name + 'の御朱印帳';
+  } else {
+    appName.textContent = t('appName');
+  }
+
+  // 設定頁
+  const settingsChar = document.getElementById('settings-avatar-char');
+  const settingsImg  = document.getElementById('settings-avatar-img');
+  if (settingsChar && settingsImg) {
+    if (avatar) {
+      settingsChar.style.display = 'none';
+      settingsImg.src = avatar;
+      settingsImg.style.display = 'block';
+    } else {
+      settingsChar.style.display = '';
+      settingsImg.style.display = 'none';
+    }
+  }
+  const usernameInput = document.getElementById('username-input');
+  if (usernameInput) usernameInput.value = name;
+}
+
+function onUsernameChange(val) {
+  userProfile.username = val.trim();
+  saveProfile();
+  applyProfile();
+}
+
+function onAvatarChange(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    userProfile.avatar = e.target.result;
+    saveProfile();
+    applyProfile();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ── i18n ──
+const I18N = {
+  ja: {
+    appName:'御朱印帳', statGoshuin:'御朱印', statWishlist:'行きたい', wishlistTitle:'行きたい神社・寺', wishlistEmpty:'行きたい神社・寺がありません。\n上の検索欄から追加しましょう。', wishlistVisited:'参拝した！', wishlistRemove:'削除', statPref:'都道府県', statLimited:'限定御朱印', statThisYear:'今年', statRegionRank:'よく行く地域', statYearLabel:'年別参拝数', statShrines:'神社・寺',
+    recentTitle:'最近の御朱印', seeAll:'すべて見る', homeEmpty:'まだ御朱印がありません。\n＋ボタンから追加してください。',
+    menuList:'御朱印一覧', menuListDesc:'すべての御朱印を時系列で確認',
+    menuShrines:'神社・寺一覧', menuShrinesDesc:'参拝した神社・寺を確認',
+    back:'もどる', tabHome:'ホーム', tabList:'一覧', tabAdd:'追加', tabShrines:'神社・寺', tabSettings:'設定',
+    addTitle:'御朱印を追加', editTitle:'御朱印を編集',
+    basicInfo:'基本情報', detailInfo:'詳細情報',
+    shrineName:'寺社名称', type:'種別', visitDate:'参拝日', region:'地域', memo:'メモ',
+    shrine:'神社', temple:'寺院',
+    limited:'限定御朱印', limitedSub:'季節・特別限定の御朱印はオンに',
+    addPhoto:'写真を追加', addPhotoSub:'タップして撮影・選択',
+    save:'記録する', edit:'編集', delete:'削除する', cancel:'キャンセル',
+    deleteTitle:'記録を削除しますか？', deleteMsg:'この操作は元に戻せません。\n御朱印の記録が削除されます。',
+    settingsTitle:'設定', settingsSub:'PREFERENCES',
+    appearance:'外観', profileSection:'プロフィール', avatarLabel:'プロフィール写真', avatarSub:'タップして変更', usernameLabel:'ユーザー名', darkMode:'ダークモード', darkModeSub:'画面を暗くして目を保護',
+    language:'言語 / Language',
+    tabAll:'すべて', toastSaved:'御朱印を記録しました', statsSection:'統計', statsLabel:'巡禮統計', statsSub:'地域・年別・限定の分析', dataSection:'データ管理', exportLabel:'データを書き出す', exportSub:'JSON形式で全記録をダウンロード', exportToast:'データを書き出しました', importLabel:'データを読み込む', importSub:'JSONファイルから記録を復元・追加', importToast:'件のデータを読み込みました', importErrFormat:'ファイル形式が正しくありません', importErrDup:'すでに存在する記録はスキップしました', importConfirm:'既存のデータと合わせて読み込みます。重複する記録はスキップされます。', toastUpdated:'更新しました', toastDeleted:'削除しました',
+    errName:'寺社名称を入力してください', location:'現在地', locationBtn:'現在地を記録する', locationBtnSub:'タップしてGPS位置を取得', locationRecorded:'位置を記録しました', locationErr:'位置情報を取得できませんでした', locationClear:'位置情報をクリアしました', share:'シェア', shareTitle:'御朱印カードを保存', shareHint:'長押し・または下のボタンで保存', saveImage:'画像を保存', errDate:'参拝日を入力してください',
+    limitedLabel:'限定',
+  },
+  zh: {
+    appName:'御朱印帳', statGoshuin:'御朱印', statWishlist:'想去', wishlistTitle:'想去的神社・寺廟', wishlistEmpty:'還沒有想去的地方。\n用上方搜尋欄新增吧。', wishlistVisited:'已參拜！', wishlistRemove:'移除', statPref:'都道府縣', statLimited:'限定御朱印', statThisYear:'今年', statRegionRank:'常去地區', statYearLabel:'年度參拜數', statShrines:'神社・寺廟',
+    recentTitle:'最近的御朱印', seeAll:'查看全部', homeEmpty:'還沒有御朱印記錄。\n請點擊 ＋ 按鈕新增。',
+    menuList:'御朱印列表', menuListDesc:'依時間順序查看所有御朱印',
+    menuShrines:'神社・寺廟列表', menuShrinesDesc:'查看參拜過的神社與寺廟',
+    back:'返回', tabHome:'首頁', tabList:'列表', tabAdd:'新增', tabShrines:'神社・寺', tabSettings:'設定',
+    addTitle:'新增御朱印', editTitle:'編輯御朱印',
+    basicInfo:'基本資訊', detailInfo:'詳細資訊',
+    shrineName:'寺社名稱', type:'類型', visitDate:'參拜日期', region:'地區', memo:'備忘錄',
+    shrine:'神社', temple:'寺院',
+    limited:'限定御朱印', limitedSub:'季節性・特別限定御朱印請開啟',
+    addPhoto:'新增照片', addPhotoSub:'點擊拍照或選擇',
+    save:'儲存記錄', edit:'編輯', delete:'刪除', cancel:'取消',
+    deleteTitle:'確定要刪除嗎？', deleteMsg:'此操作無法復原。\n御朱印記錄將被刪除。',
+    settingsTitle:'設定', settingsSub:'PREFERENCES',
+    appearance:'外觀', profileSection:'個人資料', avatarLabel:'頭像', avatarSub:'點擊更換', usernameLabel:'用戶名', darkMode:'深色模式', darkModeSub:'切換至深色介面保護眼睛',
+    language:'語言 / Language',
+    tabAll:'全部', toastSaved:'已儲存御朱印', statsSection:'統計', statsLabel:'巡禮統計', statsSub:'地區・年度・限定分析', dataSection:'資料管理', exportLabel:'匯出資料', exportSub:'以 JSON 格式下載所有記錄', exportToast:'資料已匯出', importLabel:'匯入資料', importSub:'從 JSON 檔案還原或新增記錄', importToast:'筆資料已匯入', importErrFormat:'檔案格式不正確', importErrDup:'已略過重複的記錄', importConfirm:'將與現有資料合併匯入，重複記錄會自動略過。', toastUpdated:'已更新', toastDeleted:'已刪除',
+    errName:'請輸入寺社名稱', location:'位置', locationBtn:'記錄目前位置', locationBtnSub:'點擊取得 GPS 座標', locationRecorded:'已記錄位置', locationErr:'無法取得位置資訊', locationClear:'已清除位置資訊', share:'分享', shareTitle:'儲存御朱印卡片', shareHint:'長按或點擊下方按鈕儲存', saveImage:'儲存圖片', errDate:'請選擇參拜日期',
+    limitedLabel:'限定',
+  },
+  en: {
+    appName:'Goshuin Book', statGoshuin:'Goshuin', statWishlist:'Wishlist', wishlistTitle:'Shrine & Temple Wishlist', wishlistEmpty:'No shrines on your wishlist yet.\nSearch above to add one.', wishlistVisited:'Visited!', wishlistRemove:'Remove', statPref:'Prefectures', statLimited:'Limited', statThisYear:'This year', statRegionRank:'Top regions', statYearLabel:'By year', statShrines:'Shrines & Temples',
+    recentTitle:'Recent Goshuin', seeAll:'See All', homeEmpty:'No goshuin yet.\nTap ＋ to add your first one.',
+    menuList:'Goshuin List', menuListDesc:'View all goshuin chronologically',
+    menuShrines:'Shrines & Temples', menuShrinesDesc:'Browse visited shrines and temples',
+    back:'Back', tabHome:'Home', tabList:'List', tabAdd:'Add', tabShrines:'Shrines', tabSettings:'Settings',
+    addTitle:'Add Goshuin', editTitle:'Edit Goshuin',
+    basicInfo:'Basic Info', detailInfo:'Details',
+    shrineName:'Shrine / Temple', type:'Type', visitDate:'Visit Date', region:'Region', memo:'Notes',
+    shrine:'Shrine', temple:'Temple',
+    limited:'Limited Edition', limitedSub:'Toggle on for seasonal / special goshuin',
+    addPhoto:'Add Photo', addPhotoSub:'Tap to take or choose a photo',
+    save:'Save', edit:'Edit', delete:'Delete', cancel:'Cancel',
+    deleteTitle:'Delete this record?', deleteMsg:'This cannot be undone.\nThe goshuin record will be deleted.',
+    settingsTitle:'Settings', settingsSub:'PREFERENCES',
+    appearance:'Appearance', profileSection:'Profile', avatarLabel:'Profile photo', avatarSub:'Tap to change', usernameLabel:'Username', darkMode:'Dark Mode', darkModeSub:'Switch to a darker interface',
+    language:'Language',
+    tabAll:'All', toastSaved:'Goshuin saved', statsSection:'Stats', statsLabel:'Collection stats', statsSub:'Region, year & limited analysis', dataSection:'Data', exportLabel:'Export data', exportSub:'Download all records as JSON', exportToast:'Data exported', importLabel:'Import data', importSub:'Restore or add records from JSON file', importToast:'records imported', importErrFormat:'Invalid file format', importErrDup:'Duplicate records were skipped', importConfirm:'Records will be merged with existing data. Duplicates will be skipped.', toastUpdated:'Updated', toastDeleted:'Deleted',
+    errName:'Please enter a shrine / temple name', location:'Location', locationBtn:'Record current location', locationBtnSub:'Tap to get GPS coordinates', locationRecorded:'Location recorded', locationErr:'Could not get location', locationClear:'Location cleared', share:'Share', shareTitle:'Save Goshuin Card', shareHint:'Long press or tap the button below to save', saveImage:'Save image', errDate:'Please select a visit date',
+    limitedLabel:'Limited',
+  },
+  ko: {
+    appName:'고슈인 장', statGoshuin:'고슈인', statWishlist:'가고 싶어', wishlistTitle:'가고 싶은 신사・사원', wishlistEmpty:'가고 싶은 곳이 없습니다.\n위 검색창에서 추가해 보세요.', wishlistVisited:'참배했어요!', wishlistRemove:'삭제', statPref:'도도부현', statLimited:'한정 고슈인', statThisYear:'올해', statRegionRank:'자주 가는 지역', statYearLabel:'연도별 참배 수', statShrines:'신사・사원',
+    recentTitle:'최근 고슈인', seeAll:'전체 보기', homeEmpty:'아직 고슈인이 없습니다.\n＋ 버튼으로 추가해 주세요.',
+    menuList:'고슈인 목록', menuListDesc:'시간순으로 모든 고슈인 확인',
+    menuShrines:'신사・사원 목록', menuShrinesDesc:'방문한 신사와 사원 확인',
+    back:'돌아가기', tabHome:'홈', tabList:'목록', tabAdd:'추가', tabShrines:'신사・사원', tabSettings:'설정',
+    addTitle:'고슈인 추가', editTitle:'고슈인 편집',
+    basicInfo:'기본 정보', detailInfo:'상세 정보',
+    shrineName:'신사・사원 이름', type:'종류', visitDate:'참배일', region:'지역', memo:'메모',
+    shrine:'신사', temple:'사원',
+    limited:'한정 고슈인', limitedSub:'계절・특별 한정 고슈인은 켜주세요',
+    addPhoto:'사진 추가', addPhotoSub:'탭하여 촬영 또는 선택',
+    save:'기록하기', edit:'편집', delete:'삭제', cancel:'취소',
+    deleteTitle:'기록을 삭제하시겠습니까？', deleteMsg:'이 작업은 되돌릴 수 없습니다.\n고슈인 기록이 삭제됩니다.',
+    settingsTitle:'설정', settingsSub:'PREFERENCES',
+    appearance:'외관', profileSection:'프로필', avatarLabel:'프로필 사진', avatarSub:'탭하여 변경', usernameLabel:'사용자 이름', darkMode:'다크 모드', darkModeSub:'화면을 어둡게 하여 눈 보호',
+    language:'언어 / Language',
+    tabAll:'전체', toastSaved:'고슈인을 기록했습니다', statsSection:'통계', statsLabel:'순례 통계', statsSub:'지역・연도・한정 분석', dataSection:'데이터 관리', exportLabel:'데이터 내보내기', exportSub:'JSON 형식으로 전체 기록 다운로드', exportToast:'데이터를 내보냈습니다', importLabel:'데이터 가져오기', importSub:'JSON 파일에서 기록 복원 또는 추가', importToast:'건의 데이터를 가져왔습니다', importErrFormat:'파일 형식이 올바르지 않습니다', importErrDup:'중복 기록은 건너뛰었습니다', importConfirm:'기존 데이터와 병합됩니다. 중복 기록은 자동으로 건너뜁니다.', toastUpdated:'업데이트했습니다', toastDeleted:'삭제했습니다',
+    errName:'신사・사원 이름을 입력해 주세요', location:'위치', locationBtn:'현재 위치 기록', locationBtnSub:'탭하여 GPS 좌표 가져오기', locationRecorded:'위치가 기록되었습니다', locationErr:'위치 정보를 가져올 수 없습니다', locationClear:'위치 정보를 삭제했습니다', share:'공유', shareTitle:'고슈인 카드 저장', shareHint:'길게 누르거나 아래 버튼으로 저장', saveImage:'이미지 저장', errDate:'참배일을 입력해 주세요',
+    limitedLabel:'한정',
+  },
+};
+
+let currentLang = localStorage.getItem('goshuin_lang') || 'ja';
+let isDark = localStorage.getItem('goshuin_dark') === '1';
+
+function t(key) { return (I18N[currentLang] || I18N.ja)[key] || key; }
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (el.tagName === 'INPUT' && el.type !== 'date') el.placeholder = val;
+    else el.innerHTML = val.replace(/\n/g,'<br>');
+  });
+  // font class
+  document.body.className = document.body.className.replace(/lang-\w+/g, '').trim();
+  document.body.classList.add('lang-' + currentLang);
+  // search placeholder
+  const si = document.getElementById('search-input');
+  if (si) si.placeholder = currentLang === 'ja' ? '寺社名称・地域で検索...' :
+    currentLang === 'zh' ? '搜尋寺社名稱・地區...' :
+    currentLang === 'en' ? 'Search by name or region...' : '이름 또는 지역으로 검색...';
+  // sync select value
+  const sel = document.getElementById('lang-select');
+  if (sel) sel.value = currentLang;
+}
+
+function applyDark() {
+  document.documentElement.classList.toggle('dark', isDark);
+  document.body.classList.toggle('dark', isDark);
+  const tog = document.getElementById('dark-toggle');
+  if (tog) tog.classList.toggle('on', isDark);
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('goshuin_lang', lang);
+  applyLang();
+  renderHome();
+}
+
+function toggleDark() {
+  isDark = !isDark;
+  localStorage.setItem('goshuin_dark', isDark ? '1' : '0');
+  applyDark();
+}
+
+// ── Data ──
+let data = JSON.parse(localStorage.getItem('goshuin_data') || 'null') || [
+  { id: 1, shrine: '伏見稲荷大社', type: 'shrine', date: '2025-11-03', region: '京都府', note: '千本鳥居が圧巻でした。早朝に行ったので静かで神秘的な雰囲気でした。', limited: false, photo: null, photos: [], isPublic: false, createdAt: '2025-11-03T09:00:00.000Z', coords: null },
+  { id: 2, shrine: '東大寺', type: 'temple', date: '2025-11-04', region: '奈良県', note: '大仏殿の大きさに圧倒された。御朱印は力強い筆使いで素晴らしかった。', limited: false, photo: null, photos: [], isPublic: false, createdAt: '2025-11-04T10:00:00.000Z', coords: null },
+  { id: 3, shrine: '春日大社', type: 'shrine', date: '2025-11-04', region: '奈良県', note: '奈良公園の鹿と一緒に参拝。灯籠の多さが印象的。', limited: true, photo: null, photos: [], isPublic: false, createdAt: '2025-11-04T14:00:00.000Z', coords: null },
+  { id: 4, shrine: '天龍寺', type: 'temple', date: '2025-12-15', region: '京都府', note: '枯山水の庭園が美しい。紅葉の時期に再訪したい。', limited: false, photo: null, photos: [], isPublic: false, createdAt: '2025-12-15T11:00:00.000Z', coords: null },
+  { id: 5, shrine: '明治神宮', type: 'shrine', date: '2026-01-01', region: '東京都', note: '初詣。すごい人出だったが清々しい気持ちになった。', limited: true, photo: null, photos: [], isPublic: false, createdAt: '2026-01-01T08:00:00.000Z', coords: null },
+  { id: 6, shrine: '浅草寺', type: 'temple', date: '2026-01-02', region: '東京都', note: '仲見世商店街も賑やかで楽しかった。', limited: false, photo: null, photos: [], isPublic: false, createdAt: '2026-01-02T13:00:00.000Z', coords: null },
+  { id: 7, shrine: '太宰府天満宮', type: 'shrine', date: '2026-02-10', region: '福岡県', note: '学問の神様にお参り。梅がきれいだった。', limited: false, photo: null, photos: [], isPublic: false, createdAt: '2026-02-10T10:00:00.000Z', coords: null },
+];
+
+// 舊資料自動補齊新欄位
+function migrateData() {
+  let changed = false;
+  data = data.map(item => {
+    const patched = { ...item };
+    if (patched.isPublic === undefined)  { patched.isPublic  = false; changed = true; }
+    if (patched.createdAt === undefined) { patched.createdAt = new Date(patched.date).toISOString(); changed = true; }
+    if (patched.coords === undefined)    { patched.coords    = null;  changed = true; }
+    if (!Array.isArray(patched.photos))  { patched.photos    = patched.photo ? [patched.photo] : []; changed = true; }
+    return patched;
+  });
+  if (changed) save();
+}
+
+function save() { localStorage.setItem('goshuin_data', JSON.stringify(data)); }
+
+let currentPage = 'home', pageHistory = ['home'], currentDetailId = null, editMode = false;
+let listQuery = '', shrineTypeFilter = 'all';
+let dateFrom = '', dateTo = '';
+let chipFilters = { limited: false, shrine: false, temple: false };
+const collapsedRegions = new Set();
+const REGION_ORDER = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県','未分類'];
+
+function updateTabBar(page) {
+  document.querySelectorAll('.tab-item[id^="tab-"]').forEach(t => t.classList.remove('active'));
+  const at = document.getElementById('tab-' + page);
+  if (at) at.classList.add('active');
+  document.getElementById('tab-bar').style.display = (page === 'add' || page === 'detail') ? 'none' : 'flex';
+}
+function goTo(page, push = true) {
+  if (push && page !== currentPage) pageHistory.push(page);
+  if (page === 'add') document.getElementById('add-page-title').textContent = editMode ? t('editTitle') : t('addTitle');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  updateTabBar(page);
+  currentPage = page;
+  render(page);
+  window.scrollTo(0, 0);
+}
+function goBack() {
+  if (pageHistory.length > 1) { pageHistory.pop(); goTo(pageHistory[pageHistory.length - 1], false); }
+  else goTo('home', false);
+}
+function render(page) {
+  if (page === 'home') renderHome();
+  if (page === 'list') renderList();
+  if (page === 'shrines') renderShrines();
+  if (page === 'wishlist') renderWishlist();
+  if (page === 'stats') renderStats();
+  if (page === 'add' && !editMode) resetForm();
+}
+
+function renderStats() {
+  // 3 mini stats
+  const prefs = new Set(data.filter(d=>d.region).map(d=>d.region));
+  document.getElementById('stat-prefectures').textContent = prefs.size;
+  document.getElementById('stat-limited').textContent = data.filter(d=>d.limited).length;
+  const thisYear = new Date().getFullYear().toString();
+  document.getElementById('stat-thisyear').textContent = data.filter(d=>d.date&&d.date.startsWith(thisYear)).length;
+
+  // 地域ランキング
+  const regionCount = {};
+  data.forEach(d => { if(d.region){ regionCount[d.region]=(regionCount[d.region]||0)+1; } });
+  const topRegions = Object.entries(regionCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxCount = topRegions[0]?.[1] || 1;
+  const barsEl = document.getElementById('stat-region-bars');
+  barsEl.innerHTML = `<div class="region-bar-title">${t('statRegionRank')}</div>` +
+    (topRegions.length ? topRegions.map(([region, count]) => `
+      <div class="region-bar-item">
+        <div class="region-bar-name">${region}</div>
+        <div class="region-bar-track"><div class="region-bar-fill" style="width:${Math.round(count/maxCount*100)}%"></div></div>
+        <div class="region-bar-count">${count}</div>
+      </div>`).join('') : `<div style="font-size:12px;color:var(--ink-faint);padding:8px 0">${t('homeEmpty')}</div>`);
+
+  // 年別
+  const yearCount = {};
+  data.forEach(d => { if(d.date){ const y=d.date.slice(0,4); yearCount[y]=(yearCount[y]||0)+1; } });
+  const years = Object.entries(yearCount).sort((a,b)=>b[0].localeCompare(a[0]));
+  const chipsEl = document.getElementById('stat-year-chips');
+  chipsEl.innerHTML = `<div class="region-bar-title">${t('statYearLabel')}</div>
+    <div class="year-chips">` +
+    (years.length ? years.map(([year, count]) => `
+      <div class="year-chip">
+        <span class="year-chip-year">${year}</span>
+        <span class="year-chip-num">${count}</span>
+      </div>`).join('') : '') +
+    `</div>`;
+
+  // 神社 vs 寺院
+  const shrineCount = data.filter(d=>d.type!=='temple').length;
+  const templeCount = data.filter(d=>d.type==='temple').length;
+  const total = data.length || 1;
+  const typeEl = document.getElementById('stat-type-breakdown');
+  typeEl.innerHTML = `
+    <div class="region-bar-title">${t('shrine')} vs ${t('temple')}</div>
+    <div class="region-bar-item">
+      <div class="region-bar-name">⛩ ${t('shrine')}</div>
+      <div class="region-bar-track"><div class="region-bar-fill" style="width:${Math.round(shrineCount/total*100)}%;background:#b8692e"></div></div>
+      <div class="region-bar-count">${shrineCount}</div>
+    </div>
+    <div class="region-bar-item">
+      <div class="region-bar-name">🏯 ${t('temple')}</div>
+      <div class="region-bar-track"><div class="region-bar-fill" style="width:${Math.round(templeCount/total*100)}%;background:#3a6bc8"></div></div>
+      <div class="region-bar-count">${templeCount}</div>
+    </div>`;
+}
+function renderHome() {
+  document.getElementById('stat-count').textContent = data.length;
+  document.getElementById('stat-shrines').textContent = new Set(data.map(d => d.shrine)).size;
+  document.getElementById('stat-wishlist').textContent = wishlist.length;
+
+  // 最近の御朱印
+  const grid = document.getElementById('home-recent-grid');
+  const empty = document.getElementById('home-empty');
+  const sorted = [...data].sort((a,b) => b.date.localeCompare(a.date)).slice(0,4);
+  if (!data.length) { grid.style.display='none'; empty.style.display='block'; return; }
+  grid.style.display='grid'; empty.style.display='none';
+  grid.innerHTML = sorted.map(item => `<div class="goshuin-card" onclick="openDetail(${item.id})"><div class="card-img-placeholder">${item.photo?`<img src="${item.photo}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">`:`<div class="card-no-photo"><div class="card-seal"><div class="card-seal-kanji">${item.shrine.slice(0,1)}</div></div></div>`}${item.limited?`<div style="position:absolute;top:7px;right:7px;background:var(--gold);color:#fff;font-size:9px;padding:2px 7px;border-radius:10px;font-family:'Shippori Mincho',serif">${t('limitedLabel')}</div>`:''}</div><div class="card-info"><div class="card-shrine">${item.shrine}</div><div class="card-date">${formatDate(item.date)}</div></div></div>`).join('');
+}
+function renderList() { applyListFilter(); }
+function applyListFilter() {
+  const el = document.getElementById('list-items'), empty = document.getElementById('list-empty'), countEl = document.getElementById('search-count');
+  const q = listQuery.trim().toLowerCase();
+
+  let filtered = [...data];
+  // 文字搜尋
+  if (q) filtered = filtered.filter(d => d.shrine.toLowerCase().includes(q) || (d.region||'').toLowerCase().includes(q));
+  // 日期篩選
+  if (dateFrom) filtered = filtered.filter(d => d.date >= dateFrom);
+  if (dateTo)   filtered = filtered.filter(d => d.date <= dateTo);
+  // chip 篩選
+  if (chipFilters.limited) filtered = filtered.filter(d => d.limited);
+  if (chipFilters.shrine && !chipFilters.temple) filtered = filtered.filter(d => d.type !== 'temple');
+  if (chipFilters.temple && !chipFilters.shrine) filtered = filtered.filter(d => d.type === 'temple');
+
+  filtered.sort((a,b) => b.date.localeCompare(a.date));
+
+  // 結果說明
+  const hasFilter = q || dateFrom || dateTo || chipFilters.limited || chipFilters.shrine || chipFilters.temple;
+  if (hasFilter) {
+    let label = '';
+    if (q) label += `「${listQuery}」`;
+    if (dateFrom || dateTo) {
+      const from = dateFrom ? formatDate(dateFrom) : '…';
+      const to   = dateTo   ? formatDate(dateTo)   : '…';
+      label += (label ? '　' : '') + `${from} ～ ${to}`;
+    }
+    countEl.style.display = 'block';
+    countEl.textContent = `${label}　${filtered.length}件`;
+  } else {
+    countEl.style.display = 'none';
+  }
+
+  if (!filtered.length) { el.style.display='none'; empty.style.display='block'; return; }
+  el.style.display='block'; empty.style.display='none';
+
+  // 有任何篩選條件時用平面列表，否則用地區分組
+  if (hasFilter) { el.innerHTML='<div style="padding:0 16px">'+filtered.map(listItemHTML).join('')+'</div>'; return; }
+
+  const regionMap = {};
+  filtered.forEach(item => { const r=item.region||'未分類'; if(!regionMap[r])regionMap[r]=[]; regionMap[r].push(item); });
+  const sortedRegions = Object.keys(regionMap).sort((a,b) => { const ai=REGION_ORDER.indexOf(a),bi=REGION_ORDER.indexOf(b); if(ai===-1&&bi===-1)return a.localeCompare(b,'ja'); if(ai===-1)return 1; if(bi===-1)return -1; return ai-bi; });
+  el.innerHTML = sortedRegions.map(region => {
+    const items=regionMap[region], isCollapsed=collapsedRegions.has(region);
+    const safe=region.replace(/'/g,"\\'");
+    const shrineCount=new Set(items.map(i=>i.shrine)).size;
+    const stampChar=region==='未分類'?'？':region.slice(0,1);
+    const thumbsHTML=items.slice(0,6).map(item=>`<div class="region-thumb" onclick="event.stopPropagation();openDetail(${item.id})">${item.photo?`<img src="${item.photo}" alt="">`:`<span class="region-thumb-kanji">${item.shrine.slice(0,1)}</span>`}${item.limited?`<div class="region-thumb-limited"></div>`:''}</div>`).join('');
+    const entriesHTML=items.map(item=>`<div class="region-entry" onclick="openDetail(${item.id})"><div class="region-entry-thumb">${item.photo?`<img src="${item.photo}" alt="">`:`<span class="region-entry-thumb-kanji">${item.shrine.slice(0,1)}</span>`}</div><div class="region-entry-info"><div class="region-entry-name">${item.shrine}</div><div class="region-entry-meta"><span class="type-badge ${item.type==='temple'?'temple':'shrine'}">${t(item.type==='temple'?'temple':'shrine')}</span>${item.limited?`<span class="limited-badge">${t('limitedLabel')}</span>`:''}<span>${formatDate(item.date)}</span></div></div><div class="region-entry-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>`).join('');
+    return `<div class="region-card${isCollapsed?' collapsed':''}" id="rg-${region}"><div class="region-card-header" onclick="toggleRegion('${safe}')"><div class="region-stamp"><div class="region-stamp-kanji">${stampChar}</div><div class="region-stamp-dot"></div></div><div class="region-card-meta"><div class="region-card-name">${region}</div><div class="region-card-sub"><span class="region-card-count">${items.length}件</span><span class="region-card-shrines">${shrineCount}ヶ所</span></div></div><div class="region-card-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div></div><div class="region-card-body"><div class="region-thumb-strip">${thumbsHTML}</div><div class="region-card-divider"></div>${entriesHTML}<div style="height:12px"></div></div></div>`;
+  }).join('');
+}
+function toggleRegion(region) { const el=document.getElementById('rg-'+region); if(!el)return; if(collapsedRegions.has(region)){collapsedRegions.delete(region);el.classList.remove('collapsed');}else{collapsedRegions.add(region);el.classList.add('collapsed');} }
+function listItemHTML(item) {
+  const thumbHTML = item.photo
+    ? `<img src="${item.photo}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:10px">`
+    : `<div class="list-thumb-nophoto"><div class="list-thumb-seal"><span>${item.shrine.slice(0,1)}</span></div></div>`;
+  return `<div class="list-item" onclick="openDetail(${item.id})"><div class="list-thumb">${thumbHTML}</div><div class="list-info"><div class="list-shrine">${item.shrine}</div><div style="display:flex;gap:5px;align-items:center;margin-top:4px"><span class="type-badge ${item.type==='temple'?'temple':'shrine'}">${t(item.type==='temple'?'temple':'shrine')}</span>${item.limited?`<span class="limited-badge">${t('limitedLabel')}</span>`:''}</div><div class="list-meta" style="margin-top:5px">${formatDate(item.date)}${item.region?'　'+item.region:''}</div>${item.note?`<div class="list-note" style="margin-top:3px">${item.note}</div>`:''}</div><div class="list-chevron"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div></div>`;
+}
+function onSearch(val) { listQuery=val; document.getElementById('search-clear').classList.toggle('visible',val.length>0); applyListFilter(); }
+function clearSearch() { listQuery=''; document.getElementById('search-input').value=''; document.getElementById('search-clear').classList.remove('visible'); applyListFilter(); }
+
+function onDateFilter() {
+  dateFrom = document.getElementById('date-from').value;
+  dateTo   = document.getElementById('date-to').value;
+  const hasDate = dateFrom || dateTo;
+  document.getElementById('date-filter-clear').classList.toggle('visible', !!hasDate);
+  applyListFilter();
+}
+function clearDateFilter() {
+  dateFrom = ''; dateTo = '';
+  document.getElementById('date-from').value = '';
+  document.getElementById('date-to').value   = '';
+  document.getElementById('date-filter-clear').classList.remove('visible');
+  applyListFilter();
+}
+
+function toggleChip(type) {
+  chipFilters[type] = !chipFilters[type];
+  const el = document.getElementById('chip-' + type);
+  if (el) el.classList.toggle('active', chipFilters[type]);
+  applyListFilter();
+}
+function setShrineTypeFilter(type) { shrineTypeFilter=type; document.querySelectorAll('.shrine-type-tab').forEach(t=>t.classList.toggle('active',t.dataset.type===type)); renderShrines(); }
+function renderShrines() {
+  const el=document.getElementById('shrines-list'), empty=document.getElementById('shrines-empty');
+  document.getElementById('stab-count-all').textContent=new Set(data.map(d=>d.shrine)).size;
+  document.getElementById('stab-count-shrine').textContent=new Set(data.filter(d=>d.type!=='temple').map(d=>d.shrine)).size;
+  document.getElementById('stab-count-temple').textContent=new Set(data.filter(d=>d.type==='temple').map(d=>d.shrine)).size;
+  const filtered=shrineTypeFilter==='all'?data:data.filter(d=>shrineTypeFilter==='temple'?d.type==='temple':d.type!=='temple');
+  const shrineMap={};
+  filtered.forEach(item=>{if(!shrineMap[item.shrine])shrineMap[item.shrine]=[];shrineMap[item.shrine].push(item);});
+  if(!Object.keys(shrineMap).length){el.innerHTML='';el.style.display='none';empty.style.display='block';return;}
+  el.style.display='block';empty.style.display='none';
+  const regionMap={};
+  Object.entries(shrineMap).forEach(([name,items])=>{const region=items[0].region||'地域未設定';if(!regionMap[region])regionMap[region]={};regionMap[region][name]=items;});
+  const sortedRegions=Object.keys(regionMap).sort((a,b)=>{if(a==='地域未設定')return 1;if(b==='地域未設定')return -1;return a.localeCompare(b,'ja');});
+  el.innerHTML=sortedRegions.map(region=>{
+    const shrinesInRegion=regionMap[region];
+    const totalItems=Object.values(shrinesInRegion).reduce((s,arr)=>s+arr.length,0);
+    const shrineRows=Object.entries(shrinesInRegion).sort((a,b)=>{const la=a[1].sort((x,y)=>y.date.localeCompare(x.date))[0].date,lb=b[1].sort((x,y)=>y.date.localeCompare(x.date))[0].date;return lb.localeCompare(la);}).map(([name,items])=>{
+      const last=items.sort((a,b)=>b.date.localeCompare(a.date))[0];
+      return `<div class="shrine-item" onclick="openShrineDetail('${name.replace(/'/g,"\\'")}')"><div class="shrine-badge" style="${last.type==='temple'?'background:#e8f0fe':''}"><span style="${last.type==='temple'?'color:#3a6bc8':''}">${name.slice(0,1)}</span></div><div class="shrine-info"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><div class="shrine-name">${name}</div><span class="type-badge ${last.type==='temple'?'temple':'shrine'}" style="font-size:9px;padding:2px 7px">${t(last.type==='temple'?'temple':'shrine')}</span>${items.some(i=>i.limited)?`<span class="limited-badge" style="font-size:9px;padding:2px 7px">${t('limitedLabel')}</span>`:''}</div><div class="shrine-count">${items.length}件</div></div><div class="shrine-last">${formatDate(last.date)}</div></div>`;
+    }).join('');
+    return `<div class="region-group"><div class="region-group-header"><div class="region-group-label">${region}</div><div class="region-group-line"></div><div class="region-group-count">${totalItems}件</div></div>${shrineRows}</div>`;
+  }).join('');
+}
+function openShrineDetail(name) { listQuery=name; const si=document.getElementById('search-input'); if(si)si.value=name; document.getElementById('search-clear').classList.add('visible'); document.getElementById('list-nav-title').textContent=name; goTo('list'); }
+// ── Multi-photo state ──
+let editPhotos = [];
+let editPhotoIndex = 0;
+let editCoords = null; // { lat, lng }
+
+// ── Location ──
+function recordLocation() {
+  if (!navigator.geolocation) { showToast(t('locationErr')); return; }
+  const btn = document.getElementById('location-btn');
+  document.getElementById('location-btn-label').textContent = '取得中...';
+  btn.style.opacity = '.6';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      editCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      renderLocationBtn();
+      showToast(t('locationRecorded'));
+    },
+    () => {
+      btn.style.opacity = '1';
+      document.getElementById('location-btn-label').textContent = t('locationBtn');
+      showToast(t('locationErr'));
+    },
+    { timeout: 10000, enableHighAccuracy: true }
+  );
+}
+
+function clearLocation() {
+  editCoords = null;
+  renderLocationBtn();
+  showToast(t('locationClear'));
+}
+
+function renderLocationBtn() {
+  const btn   = document.getElementById('location-btn');
+  const label = document.getElementById('location-btn-label');
+  const sub   = document.getElementById('location-btn-sub');
+  const clear = document.getElementById('location-btn-clear');
+  btn.style.opacity = '1';
+  if (editCoords) {
+    btn.classList.add('recorded');
+    label.textContent = `${editCoords.lat.toFixed(5)}, ${editCoords.lng.toFixed(5)}`;
+    sub.textContent   = '📍 ' + t('locationRecorded');
+    clear.style.display = 'block';
+  } else {
+    btn.classList.remove('recorded');
+    label.textContent = t('locationBtn');
+    sub.textContent   = t('locationBtnSub');
+    clear.style.display = 'none';
+  }
+}
+
+function renderUploadCarousel() {
+  const carousel = document.getElementById('upload-carousel');
+  if (editPhotos.length === 0) { carousel.classList.remove('active'); return; }
+  carousel.classList.add('active');
+  document.getElementById('upload-slides').innerHTML = editPhotos.map(src => `<div class="photo-slide"><img src="${src}"></div>`).join('');
+  document.getElementById('upload-dots').innerHTML = editPhotos.map((_,i) => `<div class="photo-dot${i===editPhotoIndex?' active':''}"></div>`).join('');
+  document.getElementById('upload-counter').textContent = editPhotos.length > 1 ? `${editPhotoIndex+1} / ${editPhotos.length}` : '';
+  document.getElementById('upload-slides').style.transform = `translateX(-${editPhotoIndex*100}%)`;
+
+  // 封面標記 / 設為封面按鈕
+  const existingBadge = carousel.querySelector('.photo-cover-badge');
+  const existingCoverBtn = carousel.querySelector('.photo-cover-btn');
+  if (existingBadge) existingBadge.remove();
+  if (existingCoverBtn) existingCoverBtn.remove();
+
+  if (editPhotos.length > 1) {
+    if (editPhotoIndex === 0) {
+      // 目前是封面 → 顯示金色標記
+      const badge = document.createElement('div');
+      badge.className = 'photo-cover-badge';
+      badge.innerHTML = '★ 封面';
+      carousel.appendChild(badge);
+    } else {
+      // 非封面 → 顯示「設為封面」按鈕
+      const btn = document.createElement('div');
+      btn.className = 'photo-cover-btn';
+      btn.innerHTML = '☆ 封面に設定';
+      btn.onclick = e => { e.stopPropagation(); setCoverPhoto(); };
+      carousel.appendChild(btn);
+    }
+  }
+}
+
+function setCoverPhoto() {
+  if (editPhotoIndex === 0 || !editPhotos.length) return;
+  // 把目前這張移到第一位
+  const cover = editPhotos.splice(editPhotoIndex, 1)[0];
+  editPhotos.unshift(cover);
+  editPhotoIndex = 0;
+  renderUploadCarousel();
+  showToast('封面を設定しました');
+}
+
+function handleUploadAreaClick(e) {
+  if (editPhotos.length === 0) document.getElementById('file-input').click();
+}
+
+function addPhoto(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      editPhotos.push(ev.target.result);
+      loaded++;
+      if (loaded === files.length) { editPhotoIndex = editPhotos.length - 1; renderUploadCarousel(); setupUploadSwipe(); }
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+function deleteCurrentPhoto() {
+  editPhotos.splice(editPhotoIndex, 1);
+  if (editPhotoIndex >= editPhotos.length) editPhotoIndex = Math.max(0, editPhotos.length - 1);
+  renderUploadCarousel();
+}
+
+function setupUploadSwipe() {
+  const area = document.getElementById('upload-carousel');
+  let startX = 0;
+  area.ontouchstart = e => { startX = e.touches[0].clientX; };
+  area.ontouchend   = e => { const dx=e.changedTouches[0].clientX-startX; if(Math.abs(dx)>40){if(dx<0&&editPhotoIndex<editPhotos.length-1)editPhotoIndex++;else if(dx>0&&editPhotoIndex>0)editPhotoIndex--;renderUploadCarousel();} };
+  area.onmousedown  = e => { startX = e.clientX; };
+  area.onmouseup    = e => { const dx=e.clientX-startX; if(Math.abs(dx)>40){if(dx<0&&editPhotoIndex<editPhotos.length-1)editPhotoIndex++;else if(dx>0&&editPhotoIndex>0)editPhotoIndex--;renderUploadCarousel();} };
+}
+
+let selectedType='shrine', isLimited=false;
+function selectType(type) { selectedType=type; document.getElementById('type-shrine').className='type-option shrine'+(type==='shrine'?' selected':''); document.getElementById('type-temple').className='type-option temple'+(type==='temple'?' selected':''); }
+function toggleLimited() { isLimited=!isLimited; document.getElementById('toggle-limited').className='toggle-switch'+(isLimited?' on':''); }
+
+function resetForm() {
+  editMode=false; selectedType='shrine'; isLimited=false; editPhotos=[]; editPhotoIndex=0; editCoords=null;
+  document.getElementById('input-shrine').value='';
+  document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('input-region').value='';
+  document.getElementById('input-note').value='';
+  renderUploadCarousel();
+  selectType('shrine');
+  document.getElementById('toggle-limited').className='toggle-switch';
+  document.getElementById('delete-btn').style.display='none';
+  renderLocationBtn();
+}
+
+function editEntry() {
+  const item=data.find(d=>d.id===currentDetailId); if(!item)return;
+  selectedType=item.type||'shrine'; isLimited=item.limited||false;
+  document.getElementById('input-shrine').value=item.shrine;
+  document.getElementById('input-date').value=item.date;
+  document.getElementById('input-region').value=item.region||'';
+  document.getElementById('input-note').value=item.note||'';
+  editPhotos=item.photos&&item.photos.length?[...item.photos]:(item.photo?[item.photo]:[]);
+  editPhotoIndex=0; editMode=true;
+  editCoords = item.coords || null;
+  selectType(selectedType);
+  document.getElementById('toggle-limited').className='toggle-switch'+(isLimited?' on':'');
+  renderUploadCarousel(); setupUploadSwipe();
+  renderLocationBtn();
+  document.getElementById('delete-btn').style.display='flex';
+  goTo('add');
+}
+
+function confirmDelete() { document.getElementById('delete-overlay').classList.add('show'); }
+function closeDialog() { document.getElementById('delete-overlay').classList.remove('show'); }
+function deleteEntry() {
+  data=data.filter(d=>d.id!==currentDetailId);
+  save(); closeDialog(); showToast(t('toastDeleted'));
+  editMode=false;
+  setTimeout(()=>goTo('home'),300);
+}
+
+function saveGoshuin() {
+  const shrine=document.getElementById('input-shrine').value.trim(),date=document.getElementById('input-date').value,region=document.getElementById('input-region').value.trim(),note=document.getElementById('input-note').value.trim();
+  if(!shrine){showToast(t('errName'));return;}
+  if(!date){showToast(t('errDate'));return;}
+  const photos=[...editPhotos], photo=photos[0]||null;
+  const fields={shrine,type:selectedType,date,region,note,limited:isLimited,photos,photo,coords:editCoords};
+  if(editMode&&currentDetailId){const idx=data.findIndex(d=>d.id===currentDetailId);if(idx!==-1)data[idx]={...data[idx],...fields};save();showToast(t('toastUpdated'));editMode=false;openDetail(currentDetailId);}
+  else{data.push({id:Date.now(), createdAt:new Date().toISOString(), isPublic:false, ...fields});save();showToast(t('toastSaved'));goTo('home');}
+}
+
+// ── Detail carousel ──
+let detailPhotoIndex=0, detailPhotos=[];
+
+function renderDetailCarousel() {
+  const wrap=document.getElementById('detail-img-wrap');
+  const item=data.find(d=>d.id===currentDetailId)||{shrine:''};
+  detailPhotos=item.photos&&item.photos.length?item.photos:(item.photo?[item.photo]:[]);
+  if(!detailPhotos.length){
+    wrap.onclick=null;
+    wrap.style.cursor='default';
+    wrap.innerHTML=`<div class="detail-nophoto"><div class="detail-nophoto-ring"><div class="detail-nophoto-ring-circle"></div><div class="detail-nophoto-ring-inner"></div><div class="detail-nophoto-ring-text">${item.shrine.slice(0,1)||'御'}</div></div><div class="detail-nophoto-label">NO PHOTO</div></div>`;
+    return;
+  }
+  wrap.style.cursor='zoom-in';
+  wrap.onclick=openLightbox;
+  const multi=detailPhotos.length>1;
+  const dotsHTML=multi?`<div class="detail-dots">${detailPhotos.map((_,i)=>`<div class="photo-dot${i===detailPhotoIndex?' active':''}"></div>`).join('')}</div>`:'';
+  const ctrHTML=multi?`<div class="detail-counter">${detailPhotoIndex+1} / ${detailPhotos.length}</div>`:'';
+  wrap.innerHTML=`<div class="detail-carousel" id="detail-carousel"><div class="detail-slides" id="detail-slides">${detailPhotos.map(src=>`<div class="detail-slide"><img src="${src}"></div>`).join('')}</div>${dotsHTML}${ctrHTML}</div>`;
+  document.getElementById('detail-slides').style.transform=`translateX(-${detailPhotoIndex*100}%)`;
+  if(multi) setupDetailSwipe();
+}
+
+// ── Lightbox ──
+let lbIndex = 0;
+function openLightbox() {
+  if (!detailPhotos.length) return;
+  lbIndex = detailPhotoIndex;
+  renderLightbox();
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeLightboxOnBg(e) { if (e.target === document.getElementById('lightbox')) closeLightbox(); }
+function renderLightbox() {
+  const slides = document.getElementById('lb-slides');
+  const dots   = document.getElementById('lb-dots');
+  const ctr    = document.getElementById('lb-counter');
+  slides.innerHTML = detailPhotos.map(src=>`<div class="lightbox-slide"><img src="${src}"></div>`).join('');
+  slides.style.transition = 'none';
+  slides.style.transform = `translateX(-${lbIndex*100}%)`;
+  setTimeout(()=>slides.style.transition='transform .3s ease', 10);
+  dots.innerHTML = detailPhotos.length > 1
+    ? detailPhotos.map((_,i)=>`<div class="photo-dot${i===lbIndex?' active':''}" style="background:${i===lbIndex?'#fff':'rgba(255,255,255,.35)'}"></div>`).join('') : '';
+  ctr.textContent = detailPhotos.length > 1 ? `${lbIndex+1} / ${detailPhotos.length}` : '';
+  // swipe
+  const area = slides.parentElement;
+  let startX = 0;
+  area.ontouchstart = e => { startX = e.touches[0].clientX; };
+  area.ontouchend   = e => { const dx=e.changedTouches[0].clientX-startX; if(Math.abs(dx)>40){if(dx<0&&lbIndex<detailPhotos.length-1)lbIndex++;else if(dx>0&&lbIndex>0)lbIndex--;renderLightbox();} };
+  area.onmousedown  = e => { startX = e.clientX; };
+  area.onmouseup    = e => { const dx=e.clientX-startX; if(Math.abs(dx)>40){if(dx<0&&lbIndex<detailPhotos.length-1)lbIndex++;else if(dx>0&&lbIndex>0)lbIndex--;renderLightbox();} };
+}
+// keyboard esc
+document.addEventListener('DOMContentLoaded',function(){
+  var o=document.getElementById('delete-overlay');
+  if(o) o.addEventListener('click',function(e){if(e.target===this)closeDialog();});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLightbox();closeDialog();}});
+
+function setupDetailSwipe() {
+  const area=document.getElementById('detail-carousel'); if(!area)return;
+  let startX=0;
+  area.ontouchstart=e=>{startX=e.touches[0].clientX;};
+  area.ontouchend=e=>{const dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>40){if(dx<0&&detailPhotoIndex<detailPhotos.length-1)detailPhotoIndex++;else if(dx>0&&detailPhotoIndex>0)detailPhotoIndex--;renderDetailCarousel();}};
+  area.onmousedown=e=>{startX=e.clientX;};
+  area.onmouseup=e=>{const dx=e.clientX-startX;if(Math.abs(dx)>40){if(dx<0&&detailPhotoIndex<detailPhotos.length-1)detailPhotoIndex++;else if(dx>0&&detailPhotoIndex>0)detailPhotoIndex--;renderDetailCarousel();}};
+}
+
+function openDetail(id) {
+  const item=data.find(d=>d.id===id); if(!item)return;
+  currentDetailId=id; detailPhotoIndex=0;
+  renderDetailCarousel();
+  document.getElementById('detail-shrine').textContent=item.shrine;
+  document.getElementById('detail-date').textContent=formatDate(item.date);
+  const badgesEl=document.getElementById('detail-badges');
+  badgesEl.innerHTML=`<span class="type-badge ${item.type==='temple'?'temple':'shrine'}">${t(item.type==='temple'?'temple':'shrine')}</span>`+(item.limited?`<span class="limited-badge">${t('limited')}</span>`:'');
+  const regionItem=document.getElementById('detail-region-item');
+  if(item.region){regionItem.style.display='block';document.getElementById('detail-region').textContent=item.region;}else{regionItem.style.display='none';}
+  const noteSection=document.getElementById('detail-note-section');
+  if(item.note){noteSection.style.display='block';document.getElementById('detail-note').textContent=item.note;}else{noteSection.style.display='none';}
+  const mapSection=document.getElementById('detail-map-section');
+  if(item.coords){
+    const {lat,lng}=item.coords;
+    document.getElementById('detail-map-frame').src=`https://www.openstreetmap.org/export/embed.html?bbox=${lng-.01},${lat-.01},${lng+.01},${lat+.01}&layer=mapnik&marker=${lat},${lng}`;
+    document.getElementById('detail-map-coords').textContent=`${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    mapSection.style.display='block';
+  } else {
+    mapSection.style.display='none';
+  }
+  goTo('detail');
+}
+
+function formatDate(str) { if(!str)return'';const [y,m,d]=str.split('-');return `${y}年${parseInt(m)}月${parseInt(d)}日`; }
+function showToast(msg) { const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2200); }
+
+// ── Wishlist ──
+let wishlist = JSON.parse(localStorage.getItem('goshuin_wishlist') || '[]');
+// [{ id, name, type, region, addedAt }]
+
+function saveWishlist() {
+  localStorage.setItem('goshuin_wishlist', JSON.stringify(wishlist));
+}
+
+function renderWishlist() {
+  const el    = document.getElementById('wishlist-items');
+  const empty = document.getElementById('wishlist-empty');
+  document.getElementById('stat-wishlist').textContent = wishlist.length;
+
+  if (!wishlist.length) {
+    el.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  el.innerHTML = wishlist.map(item => `
+    <div class="wishlist-item" id="wl-${item.id}">
+      <div class="wishlist-badge" style="${item.type==='temple'?'background:#e8f0fe;border-color:rgba(58,107,200,.15)':''}">
+        <span style="${item.type==='temple'?'color:#3a6bc8':''}">${item.name.slice(0,1)}</span>
+      </div>
+      <div class="wishlist-info">
+        <div class="wishlist-name">${item.name}</div>
+        <div class="wishlist-meta">
+          <span class="type-badge ${item.type==='temple'?'temple':'shrine'}" style="font-size:9px;padding:1px 7px">${t(item.type==='temple'?'temple':'shrine')}</span>
+          ${item.region ? `　${item.region}` : ''}
+        </div>
+      </div>
+      <div class="wishlist-actions">
+        <div class="wishlist-btn go" onclick="wishlistVisited(${item.id})">${t('wishlistVisited')}</div>
+        <div class="wishlist-btn del" onclick="removeFromWishlist(${item.id})">✕</div>
+      </div>
+    </div>`).join('');
+}
+
+function addToWishlist(shrine) {
+  // 重複チェック
+  if (wishlist.some(w => w.name === shrine.name)) {
+    showToast('すでに追加済みです');
+    return;
+  }
+  wishlist.unshift({
+    id: Date.now(),
+    name: shrine.name,
+    type: shrine.type || 'shrine',
+    region: shrine.region || '',
+    addedAt: new Date().toISOString(),
+  });
+  saveWishlist();
+  renderWishlist();
+  showToast(`${shrine.name} を追加しました`);
+}
+
+function removeFromWishlist(id) {
+  wishlist = wishlist.filter(w => w.id !== id);
+  saveWishlist();
+  renderWishlist();
+}
+
+function wishlistVisited(id) {
+  const item = wishlist.find(w => w.id === id);
+  if (!item) return;
+  // 新增頁預填
+  editMode = false;
+  selectedType = item.type || 'shrine';
+  isLimited = false;
+  editPhotos = []; editPhotoIndex = 0; editCoords = null;
+  document.getElementById('input-shrine').value = item.name;
+  document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+  const regionSel = document.getElementById('input-region');
+  if (regionSel && item.region) {
+    for (let opt of regionSel.options) {
+      if (opt.value === item.region || opt.text === item.region) { regionSel.value = opt.value; break; }
+    }
+  }
+  document.getElementById('input-note').value = '';
+  renderUploadCarousel();
+  selectType(selectedType);
+  document.getElementById('toggle-limited').className = 'toggle-switch';
+  document.getElementById('delete-btn').style.display = 'none';
+  renderLocationBtn();
+  document.getElementById('add-page-title').textContent = t('addTitle');
+  // Wishlist から削除（参拝済みなので）
+  removeFromWishlist(id);
+  goTo('add');
+}
+
+// Wishlist 検索
+function onWishlistSearch(val) {
+  const q = val.trim();
+  const clearBtn = document.getElementById('wishlist-search-clear');
+  clearBtn.classList.toggle('visible', q.length > 0);
+  const box = document.getElementById('wishlist-suggestions');
+  if (q.length < 1) { box.style.display = 'none'; return; }
+  const ql = q.toLowerCase();
+  const matches = SHRINE_DB.filter(s =>
+    s.name.includes(q) ||
+    s.name.toLowerCase().includes(ql) ||
+    (s.kana && s.kana.includes(ql)) ||
+    (s.roma && s.roma.includes(ql))
+  ).slice(0, 6);
+
+  if (!matches.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box._matches = matches;
+  box.innerHTML = matches.map((s, i) => `
+    <div onmousedown="pickWishlistSuggestion(${i})"
+      style="padding:11px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;${i<matches.length-1?'border-bottom:1px solid var(--border)':''};transition:background .1s"
+      onmouseover="this.style.background='var(--washi-dark)'" onmouseout="this.style.background=''">
+      <span style="font-size:16px">${s.type==='shrine'?'⛩':'🏯'}</span>
+      <span style="flex:1">
+        <span style="font-family:'Shippori Mincho',serif;font-size:15px;color:var(--ink);display:block">${s.name}</span>
+        ${s.kana?`<span style="font-size:11px;color:var(--ink-faint)">${s.kana}</span>`:''}
+      </span>
+      <span style="font-size:20px;color:var(--gold)">＋</span>
+    </div>`).join('');
+}
+
+function pickWishlistSuggestion(idx) {
+  const box = document.getElementById('wishlist-suggestions');
+  const s = box._matches[idx];
+  if (!s) return;
+  addToWishlist(s);
+  clearWishlistSearch();
+}
+
+function clearWishlistSearch() {
+  document.getElementById('wishlist-search').value = '';
+  document.getElementById('wishlist-search-clear').classList.remove('visible');
+  document.getElementById('wishlist-suggestions').style.display = 'none';
+}
+
+// ── B: 神社資料庫 & Autocomplete ──
+const SHRINE_DB = [
+  // 北海道
+  {name:'北海道神宮',kana:'ほっかいどうじんぐう',roma:'hokkaido jingu',type:'shrine',region:'北海道'},
+  // 東北
+  {name:'塩竈神社',kana:'しおがまじんじゃ',roma:'shiogama jinja',type:'shrine',region:'宮城県'},
+  {name:'宮城縣護國神社',kana:'みやぎけんごこくじんじゃ',roma:'miyagi gokoku',type:'shrine',region:'宮城県'},
+  {name:'山形縣護國神社',kana:'やまがたけんごこくじんじゃ',roma:'yamagata gokoku',type:'shrine',region:'山形県'},
+  {name:'中尊寺',kana:'ちゅうそんじ',roma:'chusonji',type:'temple',region:'岩手県'},
+  // 関東
+  {name:'明治神宮',kana:'めいじじんぐう',roma:'meiji jingu',type:'shrine',region:'東京都'},
+  {name:'靖國神社',kana:'やすくにじんじゃ',roma:'yasukuni jinja',type:'shrine',region:'東京都'},
+  {name:'浅草寺',kana:'せんそうじ',roma:'senso-ji sensoji',type:'temple',region:'東京都'},
+  {name:'増上寺',kana:'ぞうじょうじ',roma:'zojoji',type:'temple',region:'東京都'},
+  {name:'東京大神宮',kana:'とうきょうだいじんぐう',roma:'tokyo daijingu',type:'shrine',region:'東京都'},
+  {name:'根津神社',kana:'ねづじんじゃ',roma:'nezu jinja',type:'shrine',region:'東京都'},
+  {name:'神田明神',kana:'かんだみょうじん',roma:'kanda myojin',type:'shrine',region:'東京都'},
+  {name:'日枝神社',kana:'ひえじんじゃ',roma:'hie jinja',type:'shrine',region:'東京都'},
+  {name:'湯島天満宮',kana:'ゆしまてんまんぐう',roma:'yushima tenmangu',type:'shrine',region:'東京都'},
+  {name:'亀戸天神社',kana:'かめいどてんじんしゃ',roma:'kameido tenjin',type:'shrine',region:'東京都'},
+  {name:'深大寺',kana:'じんだいじ',roma:'jindaiji',type:'temple',region:'東京都'},
+  {name:'高尾山薬王院',kana:'たかおさんやくおういん',roma:'takao-san yakuoin',type:'temple',region:'東京都'},
+  {name:'鶴岡八幡宮',kana:'つるがおかはちまんぐう',roma:'tsurugaoka hachimangu',type:'shrine',region:'神奈川県'},
+  {name:'箱根神社',kana:'はこねじんじゃ',roma:'hakone jinja',type:'shrine',region:'神奈川県'},
+  {name:'江島神社',kana:'えのしまじんじゃ',roma:'enoshima jinja',type:'shrine',region:'神奈川県'},
+  {name:'大山阿夫利神社',kana:'おおやまあふりじんじゃ',roma:'oyama afuri jinja',type:'shrine',region:'神奈川県'},
+  {name:'川崎大師平間寺',kana:'かわさきだいしへいけんじ',roma:'kawasaki daishi',type:'temple',region:'神奈川県'},
+  {name:'成田山新勝寺',kana:'なりたさんしんしょうじ',roma:'narita-san shinsho-ji',type:'temple',region:'千葉県'},
+  {name:'香取神宮',kana:'かとりじんぐう',roma:'katori jingu',type:'shrine',region:'千葉県'},
+  {name:'鹿島神宮',kana:'かしまじんぐう',roma:'kashima jingu',type:'shrine',region:'茨城県'},
+  {name:'筑波山神社',kana:'つくばさんじんじゃ',roma:'tsukuba-san jinja',type:'shrine',region:'茨城県'},
+  {name:'日光東照宮',kana:'にっこうとうしょうぐう',roma:'nikko toshogu',type:'shrine',region:'栃木県'},
+  {name:'日光二荒山神社',kana:'にっこうふたらさんじんじゃ',roma:'nikko futarasan',type:'shrine',region:'栃木県'},
+  {name:'中禅寺',kana:'ちゅうぜんじ',roma:'chuzenji',type:'temple',region:'栃木県'},
+  {name:'富士山本宮浅間大社',kana:'ふじさんほんぐうせんげんたいしゃ',roma:'fujisan hongu sengen',type:'shrine',region:'静岡県'},
+  // 中部
+  {name:'熱田神宮',kana:'あつたじんぐう',roma:'atsuta jingu',type:'shrine',region:'愛知県'},
+  {name:'大須観音',kana:'おおすかんのん',roma:'osu kannon',type:'temple',region:'愛知県'},
+  {name:'豊川稲荷',kana:'とよかわいなり',roma:'toyokawa inari',type:'temple',region:'愛知県'},
+  {name:'諏訪大社',kana:'すわたいしゃ',roma:'suwa taisha',type:'shrine',region:'長野県'},
+  {name:'善光寺',kana:'ぜんこうじ',roma:'zenko-ji zenkoji',type:'temple',region:'長野県'},
+  {name:'白山比咩神社',kana:'しらやまひめじんじゃ',roma:'shirayama hime jinja',type:'shrine',region:'石川県'},
+  {name:'氣多大社',kana:'けたたいしゃ',roma:'keta taisha',type:'shrine',region:'石川県'},
+  {name:'永平寺',kana:'えいへいじ',roma:'eiheiji',type:'temple',region:'福井県'},
+  // 近畿
+  {name:'伏見稲荷大社',kana:'ふしみいなりたいしゃ',roma:'fushimi inari taisha',type:'shrine',region:'京都府'},
+  {name:'下鴨神社',kana:'しもがもじんじゃ',roma:'shimogamo jinja',type:'shrine',region:'京都府'},
+  {name:'上賀茂神社',kana:'かみがもじんじゃ',roma:'kamigamo jinja',type:'shrine',region:'京都府'},
+  {name:'平安神宮',kana:'へいあんじんぐう',roma:'heian jingu',type:'shrine',region:'京都府'},
+  {name:'八坂神社',kana:'やさかじんじゃ',roma:'yasaka jinja',type:'shrine',region:'京都府'},
+  {name:'貴船神社',kana:'きふねじんじゃ',roma:'kifune jinja',type:'shrine',region:'京都府'},
+  {name:'鞍馬寺',kana:'くらまでら',roma:'kurama-dera kurama dera',type:'temple',region:'京都府'},
+  {name:'金閣寺',kana:'きんかくじ',roma:'kinkaku-ji kinkakuji',type:'temple',region:'京都府'},
+  {name:'銀閣寺',kana:'ぎんかくじ',roma:'ginkaku-ji ginkakuji',type:'temple',region:'京都府'},
+  {name:'天龍寺',kana:'てんりゅうじ',roma:'tenryu-ji tenryuji',type:'temple',region:'京都府'},
+  {name:'嵐山大覚寺',kana:'あらしやまだいかくじ',roma:'arashiyama daikakuji',type:'temple',region:'京都府'},
+  {name:'清水寺',kana:'きよみずでら',roma:'kiyomizu-dera kiyomizudera',type:'temple',region:'京都府'},
+  {name:'高台寺',kana:'こうだいじ',roma:'kodaiji',type:'temple',region:'京都府'},
+  {name:'知恩院',kana:'ちおんいん',roma:'chion-in chionin',type:'temple',region:'京都府'},
+  {name:'三十三間堂',kana:'さんじゅうさんげんどう',roma:'sanjusangendo',type:'temple',region:'京都府'},
+  {name:'東寺',kana:'とうじ',roma:'toji to-ji',type:'temple',region:'京都府'},
+  {name:'西本願寺',kana:'にしほんがんじ',roma:'nishi honganji',type:'temple',region:'京都府'},
+  {name:'北野天満宮',kana:'きたのてんまんぐう',roma:'kitano tenmangu',type:'shrine',region:'京都府'},
+  {name:'晴明神社',kana:'せいめいじんじゃ',roma:'seimei jinja',type:'shrine',region:'京都府'},
+  {name:'住吉大社',kana:'すみよしたいしゃ',roma:'sumiyoshi taisha',type:'shrine',region:'大阪府'},
+  {name:'生国魂神社',kana:'いくくにたまじんじゃ',roma:'ikukunitama jinja',type:'shrine',region:'大阪府'},
+  {name:'四天王寺',kana:'してんのうじ',roma:'shitennoji',type:'temple',region:'大阪府'},
+  {name:'太融寺',kana:'たいゆうじ',roma:'taiyuji',type:'temple',region:'大阪府'},
+  {name:'西宮神社',kana:'にしのみやじんじゃ',roma:'nishinomiya jinja',type:'shrine',region:'兵庫県'},
+  {name:'生田神社',kana:'いくたじんじゃ',roma:'ikuta jinja',type:'shrine',region:'兵庫県'},
+  {name:'湊川神社',kana:'みなとがわじんじゃ',roma:'minatogawa jinja',type:'shrine',region:'兵庫県'},
+  {name:'東大寺',kana:'とうだいじ',roma:'todaiji todo-ji',type:'temple',region:'奈良県'},
+  {name:'興福寺',kana:'こうふくじ',roma:'kofukuji',type:'temple',region:'奈良県'},
+  {name:'春日大社',kana:'かすがたいしゃ',roma:'kasuga taisha',type:'shrine',region:'奈良県'},
+  {name:'法隆寺',kana:'ほうりゅうじ',roma:'horyuji horyu-ji',type:'temple',region:'奈良県'},
+  {name:'長谷寺',kana:'はせでら',roma:'hase-dera hasedera',type:'temple',region:'奈良県'},
+  {name:'大神神社',kana:'おおみわじんじゃ',roma:'omiya jinja omiwa',type:'shrine',region:'奈良県'},
+  {name:'吉野神宮',kana:'よしのじんぐう',roma:'yoshino jingu',type:'shrine',region:'奈良県'},
+  {name:'金峯山寺',kana:'きんぷせんじ',roma:'kinpusenji',type:'temple',region:'奈良県'},
+  {name:'伊勢神宮',kana:'いせじんぐう',roma:'ise jingu',type:'shrine',region:'三重県'},
+  {name:'猿田彦神社',kana:'さるたひこじんじゃ',roma:'sarutahiko jinja',type:'shrine',region:'三重県'},
+  {name:'熊野大社',kana:'くまのたいしゃ',roma:'kumano taisha',type:'shrine',region:'和歌山県'},
+  {name:'高野山金剛峯寺',kana:'こうやさんこんごうぶじ',roma:'koyasan kongobuji',type:'temple',region:'和歌山県'},
+  // 中国・四国
+  {name:'出雲大社',kana:'いずもおおやしろ',roma:'izumo oyashiro izumo taisha',type:'shrine',region:'島根県'},
+  {name:'三徳山三佛寺',kana:'みとくさんさんぶつじ',roma:'mitoku-san sanbutsuji',type:'temple',region:'鳥取県'},
+  {name:'厳島神社',kana:'いつくしまじんじゃ',roma:'itsukushima jinja miyajima',type:'shrine',region:'広島県'},
+  {name:'大山祇神社',kana:'おおやまづみじんじゃ',roma:'oyamazumi jinja',type:'shrine',region:'愛媛県'},
+  {name:'金刀比羅宮',kana:'ことひらぐう',roma:'kotohira-gu konpira',type:'shrine',region:'香川県'},
+  {name:'善通寺',kana:'ぜんつうじ',roma:'zentsuji',type:'temple',region:'香川県'},
+  // 九州・沖縄
+  {name:'太宰府天満宮',kana:'だざいふてんまんぐう',roma:'dazaifu tenmangu',type:'shrine',region:'福岡県'},
+  {name:'宗像大社',kana:'むなかたたいしゃ',roma:'munakata taisha',type:'shrine',region:'福岡県'},
+  {name:'筥崎宮',kana:'はこざきぐう',roma:'hakozaki-gu hakozakigu',type:'shrine',region:'福岡県'},
+  {name:'住吉神社',kana:'すみよしじんじゃ',roma:'sumiyoshi jinja',type:'shrine',region:'福岡県'},
+  {name:'祐徳稲荷神社',kana:'ゆうとくいなりじんじゃ',roma:'yutoku inari jinja',type:'shrine',region:'佐賀県'},
+  {name:'諫早神社',kana:'いさはやじんじゃ',roma:'isahaya jinja',type:'shrine',region:'長崎県'},
+  {name:'阿蘇神社',kana:'あそじんじゃ',roma:'aso jinja',type:'shrine',region:'熊本県'},
+  {name:'青島神社',kana:'あおしまじんじゃ',roma:'aoshima jinja',type:'shrine',region:'宮崎県'},
+  {name:'霧島神宮',kana:'きりしまじんぐう',roma:'kirishima jingu',type:'shrine',region:'鹿児島県'},
+  {name:'波上宮',kana:'なみのうえぐう',roma:'naminoue-gu naminouegu',type:'shrine',region:'沖縄県'},
+];
+
+let suggestionVisible = false;
+
+function onShrineInput(val) {
+  const q = val.trim();
+  const box = document.getElementById('shrine-suggestions');
+  if (q.length < 1) { box.style.display='none'; suggestionVisible=false; return; }
+  const ql = q.toLowerCase();
+  const matches = SHRINE_DB.filter(s =>
+    s.name.includes(q) ||
+    s.name.toLowerCase().includes(ql) ||
+    (s.kana && s.kana.includes(ql)) ||
+    (s.roma && s.roma.includes(ql))
+  ).slice(0, 6);
+  if (!matches.length) { box.style.display='none'; suggestionVisible=false; return; }
+  box.innerHTML = matches.map((s,i) => `
+    <div onmousedown="pickSuggestion(${i})" data-idx="${i}"
+      style="padding:11px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;${i<matches.length-1?'border-bottom:1px solid var(--border)':''};transition:background .1s"
+      onmouseover="this.style.background='var(--washi-dark)'" onmouseout="this.style.background=''">
+      <span style="font-size:16px">${s.type==='shrine'?'⛩':'🏯'}</span>
+      <span style="flex:1">
+        <span style="font-family:'Shippori Mincho',serif;font-size:15px;color:var(--ink);display:block">${s.name}</span>
+        ${s.kana?`<span style="font-size:11px;color:var(--ink-faint);letter-spacing:.04em">${s.kana}</span>`:''}
+      </span>
+      <span style="font-size:11px;color:var(--ink-faint);flex-shrink:0">${s.region}</span>
+    </div>`).join('');
+  // store matches for pick
+  box._matches = matches;
+  box.style.display = 'block';
+  suggestionVisible = true;
+}
+
+function pickSuggestion(idx) {
+  const box = document.getElementById('shrine-suggestions');
+  const s = box._matches[idx];
+  if (!s) return;
+  document.getElementById('input-shrine').value = s.name;
+  // 自動填入地區
+  const regionSel = document.getElementById('input-region');
+  if (regionSel) {
+    for (let opt of regionSel.options) {
+      if (opt.value === s.region || opt.text === s.region) { regionSel.value = opt.value; break; }
+    }
+  }
+  // 自動填入種別
+  selectType(s.type);
+  box.style.display = 'none';
+  suggestionVisible = false;
+}
+
+function hideSuggestions() {
+  setTimeout(() => {
+    const box = document.getElementById('shrine-suggestions');
+    if (box) box.style.display = 'none';
+    suggestionVisible = false;
+  }, 150);
+}
+
+// ── D: Import ──
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = ''; // 重置讓同一檔案可再次觸發
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    let parsed;
+    try {
+      parsed = JSON.parse(e.target.result);
+    } catch {
+      showToast(t('importErrFormat'));
+      return;
+    }
+
+    // 支援兩種格式：直接的 array，或帶 version/records 的 export 物件
+    let records = [];
+    if (Array.isArray(parsed)) {
+      records = parsed;
+    } else if (parsed.records && Array.isArray(parsed.records)) {
+      records = parsed.records;
+    } else {
+      showToast(t('importErrFormat'));
+      return;
+    }
+
+    // 以 id 為基準去重，已存在的跳過
+    const existingIds = new Set(data.map(d => d.id));
+    let added = 0, skipped = 0;
+
+    records.forEach(item => {
+      if (!item.shrine || !item.date) return; // 缺必要欄位
+      if (existingIds.has(item.id)) {
+        skipped++;
+        return;
+      }
+      // 補齊新欄位（以防舊格式）
+      const patched = {
+        isPublic:  false,
+        createdAt: new Date(item.date).toISOString(),
+        coords:    null,
+        photos:    [],
+        photo:     null,
+        ...item,
+      };
+      if (!Array.isArray(patched.photos)) {
+        patched.photos = patched.photo ? [patched.photo] : [];
+      }
+      data.push(patched);
+      existingIds.add(patched.id);
+      added++;
+    });
+
+    if (added === 0 && skipped > 0) {
+      showToast(t('importErrDup'));
+      return;
+    }
+
+    save();
+    renderHome();
+
+    // Toast 顯示匯入筆數
+    const lang = currentLang;
+    let msg = '';
+    if (lang === 'ja') msg = `${added}${t('importToast')}`;
+    else if (lang === 'zh') msg = `${added} ${t('importToast')}`;
+    else if (lang === 'en') msg = `${added} ${t('importToast')}`;
+    else msg = `${added}${t('importToast')}`;
+    if (skipped > 0) msg += (lang === 'en' ? ` (${skipped} skipped)` : lang === 'zh' ? `（略過 ${skipped} 筆）` : lang === 'ko' ? ` (${skipped}건 건너뜀)` : `（${skipped}件スキップ）`);
+    showToast(msg);
+  };
+  reader.readAsText(file);
+}
+function exportData() {
+  const exportObj = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    totalRecords: data.length,
+    records: data.map(item => {
+      // 匯出時照片以 base64 保留，但標記大小供參考
+      const { photo, photos, ...meta } = item;
+      return {
+        ...meta,
+        photoCount: (photos && photos.length) ? photos.length : (photo ? 1 : 0),
+        photos: photos && photos.length ? photos : (photo ? [photo] : []),
+      };
+    })
+  };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `goshuin_export_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(t('exportToast'));
+}
+
+// ── Share Card ──
+function openShareCard() {
+  const item = data.find(d => d.id === currentDetailId);
+  if (!item) return;
+  document.getElementById('share-overlay').classList.add('show');
+  setTimeout(() => drawShareCard(item), 80);
+}
+
+function closeShareCard(e) {
+  if (!e || e.target === document.getElementById('share-overlay')) {
+    document.getElementById('share-overlay').classList.remove('show');
+  }
+}
+
+function downloadShareCard() {
+  const canvas = document.getElementById('share-canvas');
+  const a = document.createElement('a');
+  const item = data.find(d => d.id === currentDetailId);
+  a.download = `goshuin_${(item?.shrine||'card').replace(/\s/g,'_')}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  showToast(t('saveImage'));
+}
+
+function drawShareCard(item) {
+  const canvas = document.getElementById('share-canvas');
+  // 橫式 3:2
+  const W = 1200, H = 800;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const dark = document.body.classList.contains('dark');
+
+  const LEFT = W * 0.52;   // 照片區寬度
+  const RIGHT_X = LEFT + 1; // 資訊區起點
+
+  // ── 整體背景 ──
+  ctx.fillStyle = dark ? '#1e1b14' : '#f5f0e8';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── 右側背景（稍微不同色） ──
+  ctx.fillStyle = dark ? '#242018' : '#fff';
+  ctx.fillRect(LEFT, 0, W - LEFT, H);
+
+  // ── 和紙横線（右側のみ） ──
+  ctx.strokeStyle = dark ? 'rgba(255,255,255,.03)' : 'rgba(26,21,16,.04)';
+  ctx.lineWidth = 1;
+  for (let y = 0; y < H; y += 20) {
+    ctx.beginPath(); ctx.moveTo(LEFT, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // ── 上部アクセントライン（右側） ──
+  ctx.fillStyle = '#c0392b';
+  ctx.fillRect(LEFT, 0, W - LEFT, 6);
+
+  // ── 左側：照片エリア ──
+  const photos = item.photos && item.photos.length ? item.photos : (item.photo ? [item.photo] : []);
+
+  function drawRight() {
+    const pad = 52;
+    const rx = RIGHT_X + pad;
+    const rw = W - RIGHT_X - pad;
+    let cy = 60;
+
+    // App ロゴ行
+    // 朱印丸
+    const sealR = 22;
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath(); ctx.arc(rx + sealR, cy + sealR, sealR, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `500 20px 'Hiragino Mincho ProN','Yu Mincho',serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('御', rx + sealR, cy + sealR + 1);
+
+    // App 名
+    ctx.fillStyle = dark ? 'rgba(240,235,224,.5)' : 'rgba(26,21,16,.35)';
+    ctx.font = '22px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('GOSHUIN COLLECTION', rx + sealR*2 + 14, cy + sealR + 8);
+
+    cy += 80;
+
+    // 区切り線
+    ctx.strokeStyle = dark ? 'rgba(255,255,255,.08)' : 'rgba(192,57,43,.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,7]);
+    ctx.beginPath(); ctx.moveTo(rx, cy); ctx.lineTo(W - pad, cy); ctx.stroke();
+    ctx.setLineDash([]);
+
+    cy += 44;
+
+    // 神社名
+    ctx.fillStyle = dark ? '#f0ebe0' : '#1a1510';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const shrineText = item.shrine;
+    // フォントサイズを名前の長さに合わせて調整
+    const fontSize = shrineText.length <= 6 ? 72 : shrineText.length <= 10 ? 58 : 46;
+    ctx.font = `500 ${fontSize}px 'Hiragino Mincho ProN','Yu Mincho',serif`;
+    const maxW = rw;
+    if (ctx.measureText(shrineText).width > maxW) {
+      const mid = Math.ceil(shrineText.length / 2);
+      ctx.fillText(shrineText.slice(0, mid), rx, cy);
+      cy += fontSize * 1.25;
+      ctx.fillText(shrineText.slice(mid), rx, cy);
+      cy += fontSize * 1.25;
+    } else {
+      ctx.fillText(shrineText, rx, cy);
+      cy += fontSize * 1.25;
+    }
+
+    cy += 16;
+
+    // 種別 + 限定バッジ
+    const badgeColor = item.type === 'temple' ? '#3a6bc8' : '#b8692e';
+    const badgeBg   = item.type === 'temple' ? 'rgba(58,107,200,.1)' : 'rgba(184,105,46,.1)';
+    const badgeText = item.type === 'temple' ? t('temple') : t('shrine');
+    ctx.font = '26px sans-serif';
+    const bw = ctx.measureText(badgeText).width + 32;
+    ctx.fillStyle = badgeBg;
+    roundRect(ctx, rx, cy, bw, 40, 20);
+    ctx.fillStyle = badgeColor;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(badgeText, rx + bw/2, cy + 20);
+
+    if (item.limited) {
+      const ltext = '✦ ' + t('limitedLabel');
+      ctx.font = '26px sans-serif';
+      const lw = ctx.measureText(ltext).width + 32;
+      ctx.fillStyle = 'rgba(184,150,46,.12)';
+      roundRect(ctx, rx + bw + 10, cy, lw, 40, 20);
+      ctx.fillStyle = '#b8962e';
+      ctx.textAlign = 'center';
+      ctx.fillText(ltext, rx + bw + 10 + lw/2, cy + 20);
+    }
+
+    cy += 64;
+
+    // 日付
+    ctx.fillStyle = dark ? 'rgba(240,235,224,.6)' : 'rgba(26,21,16,.5)';
+    ctx.font = '30px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('📅  ' + formatDate(item.date), rx, cy);
+    cy += 46;
+
+    // 地域
+    if (item.region) {
+      ctx.fillText('📍  ' + item.region, rx, cy);
+      cy += 46;
+    }
+
+    // メモ（最大2行）
+    if (item.note) {
+      cy += 8;
+      ctx.fillStyle = dark ? 'rgba(240,235,224,.35)' : 'rgba(26,21,16,.35)';
+      ctx.font = '24px sans-serif';
+      const lineMax = 18;
+      let line = '', lines = [];
+      for (let ch of item.note) {
+        if ((line+ch).length > lineMax) { lines.push(line); line=ch; }
+        else line += ch;
+      }
+      if (line) lines.push(line);
+      lines.slice(0,2).forEach((l,i) => {
+        ctx.fillText(i===1&&lines.length>2?l.slice(0,-1)+'…':l, rx, cy + i*38);
+      });
+    }
+
+    // ── 右下：QR Code ──
+    const QR_SIZE = 96;
+    const qrX = W - pad - QR_SIZE;
+    const qrY = H - pad - QR_SIZE;
+    const bgPad = 6;
+    ctx.fillStyle = dark ? 'rgba(26,22,16,.92)' : 'rgba(255,255,255,.95)';
+    roundRect(ctx, qrX - bgPad, qrY - bgPad, QR_SIZE + bgPad*2, QR_SIZE + bgPad*2, 8);
+    ctx.fillStyle = dark ? 'rgba(240,235,224,.28)' : 'rgba(26,21,16,.22)';
+    ctx.font = '17px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    // 用戶名（若有）
+    const uname = (userProfile && userProfile.username) ? userProfile.username : '';
+    if (uname) {
+      ctx.fillText(uname, qrX + QR_SIZE/2, qrY - 28);
+      ctx.fillStyle = dark ? 'rgba(240,235,224,.18)' : 'rgba(26,21,16,.15)';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('Scan to open app', qrX + QR_SIZE/2, qrY - 10);
+    } else {
+      ctx.fillText('Scan to open app', qrX + QR_SIZE/2, qrY - 8);
+    }
+    // QR を非同期で描画
+    drawQROnCanvas(ctx, qrX, qrY, QR_SIZE, dark).then(ok => {
+      if (!ok) drawQRFallback(ctx, qrX, qrY, QR_SIZE, dark);
+    });
+  }
+
+  if (photos.length) {
+    const img = new Image();
+    img.onload = () => {
+      // 左側に cover で描画
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const scale = Math.max(LEFT / iw, H / ih);
+      const dw = iw*scale, dh = ih*scale;
+      const dx = (LEFT - dw)/2, dy = (H - dh)/2;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, LEFT, H);
+      ctx.clip();
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+
+      // 左右の境界に薄いグラデーション
+      const grad = ctx.createLinearGradient(LEFT-60, 0, LEFT+1, 0);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, dark ? 'rgba(36,32,24,.9)' : 'rgba(255,255,255,.9)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(LEFT-60, 0, 62, H);
+
+      drawRight();
+    };
+    img.src = photos[0];
+  } else {
+    // 無照片：左側に朱印装飾
+    const cx = LEFT/2, cy = H/2;
+    ctx.strokeStyle = 'rgba(192,57,43,.18)';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(cx, cy, 120, 0, Math.PI*2); ctx.stroke();
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, 100, 0, Math.PI*2); ctx.stroke();
+    ctx.fillStyle = 'rgba(192,57,43,.1)';
+    ctx.font = `bold 100px 'Hiragino Mincho ProN',serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.shrine.slice(0,1), cx, cy);
+    drawRight();
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath(); ctx.fill();
+}
+
+// ── QR Code 描画（qrcodejs 経由） ──
+const SHARE_URL = 'https://goshuin.app';
+
+function drawQROnCanvas(targetCtx, qrX, qrY, qrSize, dark) {
+  return new Promise(resolve => {
+    if (typeof QRCode === 'undefined') { resolve(false); return; }
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;visibility:hidden';
+    document.body.appendChild(tmp);
+    try {
+      new QRCode(tmp, {
+        text: SHARE_URL,
+        width: qrSize, height: qrSize,
+        colorDark:  dark ? '#f0ebe0' : '#1a1510',
+        colorLight: 'rgba(0,0,0,0)',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e) { document.body.removeChild(tmp); resolve(false); return; }
+
+    // QRCode は非同期で img を生成する
+    const tryDraw = (attempts) => {
+      const qrCanvas = tmp.querySelector('canvas');
+      const qrImg    = tmp.querySelector('img');
+      if (qrCanvas) {
+        targetCtx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+        document.body.removeChild(tmp);
+        resolve(true);
+      } else if (qrImg && qrImg.complete && qrImg.naturalWidth > 0) {
+        targetCtx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+        document.body.removeChild(tmp);
+        resolve(true);
+      } else if (attempts > 0) {
+        setTimeout(() => tryDraw(attempts - 1), 60);
+      } else {
+        document.body.removeChild(tmp);
+        resolve(false);
+      }
+    };
+    setTimeout(() => tryDraw(10), 50);
+  });
+}
+
+function drawQRFallback(ctx, qrX, qrY, size, dark) {
+  // QR ライブラリ不在時：コーナーパターンのみ描画
+  const cell = Math.floor(size / 21);
+  ctx.fillStyle = dark ? '#f0ebe0' : '#1a1510';
+  [[0,0],[14,0],[0,14]].forEach(([cx,cy]) => {
+    ctx.fillRect(qrX+cx*cell, qrY+cy*cell, 7*cell, 7*cell);
+    ctx.fillStyle = dark ? 'rgba(36,32,24,1)' : '#fff';
+    ctx.fillRect(qrX+(cx+1)*cell, qrY+(cy+1)*cell, 5*cell, 5*cell);
+    ctx.fillStyle = dark ? '#f0ebe0' : '#1a1510';
+    ctx.fillRect(qrX+(cx+2)*cell, qrY+(cy+2)*cell, 3*cell, 3*cell);
+  });
+}
+
+// ── Clock ──
+function updateClock() {
+  const el = document.getElementById('status-time');
+  if (!el) return;
+  const now = new Date();
+  const h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2, '0');
+  el.textContent = `${h}:${m}`;
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ── Init ──
+migrateData();
+applyDark();
+applyLang();
+applyProfile();
+renderHome();
+renderWishlist();
+
+// ── PWA: Service Worker 登録 ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
